@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEM A PAU - Multiplayer Edition</title>
+    <title>NEM A PAU - Multiplayer</title>
     <style>
         body { margin: 0; padding: 0; background: #000; color: #fff; font-family: 'Courier New', Courier, monospace; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
         #players { position: absolute; top: 20px; right: 20px; border: 1px solid #fff; padding: 15px; text-align: right; font-size: 0.9em; min-width: 150px; z-index: 10; display:none; }
@@ -13,23 +13,21 @@
         input { background: #000; color: #fff; border: 1px solid #fff; padding: 12px; margin: 10px 0; text-align: center; width: 100%; box-sizing: border-box; font-size: 1.2rem; }
         button { background: #fff; color: #000; border: 1px solid #fff; padding: 12px 25px; margin: 10px 5px; cursor: pointer; font-weight: bold; text-transform: uppercase; width: 100%; font-size: 1rem; }
         button:hover { background: #ccc; }
-        .pergunta-texto { font-size: 1.4rem; margin: 20px 0; min-height: 80px; }
         .unidade { opacity: 0.6; font-size: 0.8rem; letter-spacing: 2px; }
-        .ganhou { color: #ff4d4d; font-weight: bold; }
-        .host-tag { color: #f1c40f; font-size: 0.7rem; margin-left: 5px; }
+        .pergunta-texto { font-size: 1.4rem; margin: 20px 0; min-height: 80px; }
         .palpite-atual { border-top: 1px solid #333; padding-top: 20px; margin-top: 20px; }
+        .ganhou { color: #ff4d4d; font-weight: bold; }
     </style>
 </head>
 <body>
 
 <div id="players"></div>
-<div id="app"></div>
+<div id="app">Carregando jogo...</div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getDatabase, ref, set, update, onValue, push, onDisconnect, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-/* ================= CONFIGURAÇÃO FIREBASE ================= */
 const firebaseConfig = {
     apiKey: "AIzaSyBLfN4uLs6L1_XnSSdpIbhrPKBSreAtK_8",
     authDomain: "nemapau-47956.firebaseapp.com",
@@ -40,36 +38,42 @@ const firebaseConfig = {
     appId: "1:575679805707:web:768cf1108ede446f710a0e"
 };
 
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
+// Inicialização segura
+let db;
+try {
+    const app = initializeApp(firebaseConfig);
+    db = getDatabase(app);
+} catch (e) {
+    console.error("Erro ao conectar ao Firebase:", e);
+}
+
 const gameRef = ref(db, "game_state");
 const playersRef = ref(db, "players");
 
-/* ================= BANCO DE PERGUNTAS ================= */
 const perguntas = [
     { texto: "Distância média da Terra à Lua", unidade: "km", resposta: 384400 },
     { texto: "Altura do Monte Everest", unidade: "m", resposta: 8849 },
     { texto: "Idade estimada da Terra", unidade: "anos", resposta: 4540000000 },
-    { texto: "População estimada do Brasil", unidade: "pessoas", resposta: 203062512 },
-    { texto: "Velocidade da luz no vácuo", unidade: "km/s", resposta: 299792 },
-    { texto: "Altura do Burj Khalifa", unidade: "m", resposta: 828 },
-    { texto: "Extensão da Muralha da China", unidade: "km", resposta: 21196 },
-    { texto: "Quantos corações tem um polvo?", unidade: "corações", resposta: 3 },
-    { texto: "Ano em que o homem pisou na Lua", unidade: "ano", resposta: 1969 }
+    { texto: "População do Brasil", unidade: "pessoas", resposta: 203062512 },
+    { texto: "Velocidade da luz no vácuo", unidade: "km/s", resposta: 299792 }
 ];
 
-/* ================= ESTADO LOCAL E SINCRONIZAÇÃO ================= */
 let state = { tela: "inicial" };
 let myId = null;
 
+// Sincronização
 onValue(gameRef, (snapshot) => {
     if (snapshot.exists()) {
         state = snapshot.val();
         render();
+    } else {
+        render(); // Renderiza a tela inicial se o banco estiver vazio
     }
+}, (error) => {
+    console.error("Erro de permissão:", error);
+    render();
 });
 
-/* ================= FUNÇÕES DE RENDERIZAÇÃO ================= */
 function render() {
     const appDiv = document.getElementById("app");
     const playersDiv = document.getElementById("players");
@@ -78,42 +82,39 @@ function render() {
     box.className = "center";
     appDiv.appendChild(box);
 
-    // Render Placar
     if (state.jogadores && state.tela !== "inicial") {
         playersDiv.style.display = "block";
         playersDiv.innerHTML = "<strong>PLACAR</strong><br>" + Object.values(state.jogadores)
-            .map(j => `<div>${j.nome}${state.host === j.id ? '<span class="host-tag">[HOST]</span>' : ''}: ${j.pontos}</div>`).join("");
+            .map(j => `<div>${j.nome}: ${j.pontos}</div>`).join("");
     } else { playersDiv.style.display = "none"; }
 
-    // Telas
     if (state.tela === "inicial") {
         box.innerHTML = `
             <div class="logo">NEM A PAU</div>
             <input id="nome" placeholder="SEU NOME">
-            <input id="bots" type="number" min="0" max="5" value="0">
-            <p><small>QUANTIDADE DE BOTS</small></p>
+            <input id="bots" type="number" min="0" max="5" value="1">
             <button id="btnEntrar">ENTRAR NO JOGO</button>
+            <p style="font-size:0.7rem; color: #555">Se a tela não mudar, verifique o console (F12)</p>
         `;
         document.getElementById("btnEntrar").onclick = entrar;
     }
 
-    if (state.tela === "espera") {
+    else if (state.tela === "espera") {
         box.innerHTML = `
             <h2>SALA DE ESPERA</h2>
-            <p>Jogadores na sala:</p>
             ${Object.values(state.jogadores).map(j => `<div>- ${j.nome}</div>`).join("")}
             ${state.host === myId ? '<button id="btnIniciar">INICIAR PARTIDA</button>' : '<p>Aguardando Host...</p>'}
         `;
         document.getElementById("btnIniciar")?.addEventListener("click", iniciarPartida);
     }
 
-    if (state.tela === "jogo") {
+    else if (state.tela === "jogo") {
         const jVez = state.jogadorDaVez;
         box.innerHTML = `
             <div>VEZ DE: <strong>${jVez.nome.toUpperCase()}</strong></div>
             <div class="unidade">${state.pergunta.unidade}</div>
             <div class="pergunta-texto">${state.pergunta.texto}</div>
-            ${state.valorAtual ? `<div class="palpite-atual">Último palpite: <strong>${state.valorAtual.toLocaleString()}</strong><br><small>por ${state.ultimoJogador.nome}</small></div>` : "<p>Primeiro chute!</p>"}
+            ${state.valorAtual ? `<div class="palpite-atual">Último: <strong>${state.valorAtual.toLocaleString()}</strong><br><small>por ${state.ultimoJogador.nome}</small></div>` : "<p>Primeiro chute!</p>"}
             <div style="margin-top:30px">
                 ${jVez.id === myId ? `
                     <input id="chute" type="number" placeholder="VALOR MAIOR">
@@ -124,48 +125,44 @@ function render() {
         `;
         document.getElementById("btnChutar")?.addEventListener("click", chutar);
         document.getElementById("btnDuvidar")?.addEventListener("click", duvidar);
-        
         if (!jVez.humano && state.host === myId) setTimeout(jogadaIA, 2000);
     }
 
-    if (state.tela === "nemapau") {
+    else if (state.tela === "nemapau") {
         box.innerHTML = `<div class="logo" style="border-color:red; color:red;">NEM A PAU!</div>`;
     }
 
-    if (state.tela === "resultado") {
+    else if (state.tela === "resultado") {
         box.innerHTML = `
             <h3>RESPOSTA: ${state.pergunta.resposta.toLocaleString()}</h3>
             <p>PALPITE: ${state.valorAtual.toLocaleString()}</p>
-            <hr>
             <div class="ganhou">${state.msgFeedbackHtml}</div>
         `;
     }
 }
 
-/* ================= LÓGICA DO JOGO ================= */
 async function entrar() {
     const nome = document.getElementById("nome").value || "Jogador";
     const numBots = parseInt(document.getElementById("bots").value) || 0;
-    
     const pRef = push(playersRef);
     myId = pRef.key;
-
-    // Remove jogador se desconectar
     onDisconnect(pRef).remove();
 
-    const novoJogador = { id: myId, nome: nome, pontos: 0, humano: true };
-    await set(pRef, novoJogador);
-
-    const snap = await get(playersRef);
-    const jogadoresAtuais = snap.val() || {};
-    const ids = Object.keys(jogadoresAtuais);
-    
-    if (ids[0] === myId) { // Eu sou o Host
-        for(let i=1; i<=numBots; i++) {
-            const botId = `BOT_${i}`;
-            jogadoresAtuais[botId] = { id: botId, nome: botId, pontos: 0, humano: false };
+    try {
+        await set(pRef, { id: myId, nome, pontos: 0, humano: true });
+        const snap = await get(playersRef);
+        const jogs = snap.val() || {};
+        const ids = Object.keys(jogs);
+        
+        if (ids[0] === myId) {
+            for(let i=1; i<=numBots; i++) {
+                const bId = `BOT_${i}`;
+                jogs[bId] = { id: bId, nome: bId, pontos: 0, humano: false };
+            }
+            update(gameRef, { tela: "espera", jogadores: jogs, host: myId });
         }
-        update(gameRef, { tela: "espera", jogadores: jogadoresAtuais, host: myId });
+    } catch(e) {
+        alert("Erro no Firebase! Verifique as regras de segurança do seu banco.");
     }
 }
 
@@ -182,16 +179,13 @@ function iniciarPartida() {
 
 function chutar() {
     const v = Number(document.getElementById("chute").value);
-    if (state.valorAtual && v <= state.valorAtual) return alert("Chute um valor maior!");
-    
+    if (state.valorAtual && v <= state.valorAtual) return alert("Chute maior!");
     const lista = Object.values(state.jogadores);
     const index = lista.findIndex(j => j.id === myId);
-    const prox = lista[(index + 1) % lista.length];
-
     update(gameRef, {
         valorAtual: v,
         ultimoJogador: state.jogadores[myId],
-        jogadorDaVez: prox
+        jogadorDaVez: lista[(index + 1) % lista.length]
     });
 }
 
@@ -201,23 +195,13 @@ function duvidar() {
         const correta = state.pergunta.resposta;
         const jChutou = state.ultimoJogador;
         const jDuvidou = state.jogadorDaVez;
-        let msg = "";
+        let msg = (state.valorAtual > correta) ? `${jChutou.nome} mentiu!` : `${jChutou.nome} falou a verdade!`;
+        
+        if (state.valorAtual > correta) state.jogadores[jChutou.id].pontos++;
+        else state.jogadores[jDuvidou.id].pontos++;
 
-        if (state.valorAtual > correta) {
-            state.jogadores[jChutou.id].pontos++;
-            msg = `${jChutou.nome} mentiu e ganhou 1 ponto!`;
-        } else {
-            state.jogadores[jDuvidou.id].pontos++;
-            msg = `${jChutou.nome} falou a verdade! Ponto para ${jDuvidou.nome}.`;
-        }
-
-        update(gameRef, {
-            tela: "resultado",
-            msgFeedbackHtml: msg,
-            jogadores: state.jogadores
-        });
-
-        setTimeout(iniciarPartida, 5000);
+        update(gameRef, { tela: "resultado", msgFeedbackHtml: msg, jogadores: state.jogadores });
+        setTimeout(iniciarPartida, 4000);
     }, 2000);
 }
 
@@ -225,21 +209,17 @@ function jogadaIA() {
     if (state.tela !== "jogo") return;
     const j = state.jogadorDaVez;
     const correta = state.pergunta.resposta;
-    
-    const risco = state.valorAtual > correta ? 0.7 : 0.15;
-    if (state.valorAtual && Math.random() < risco) {
+    if (state.valorAtual && Math.random() < (state.valorAtual > correta ? 0.6 : 0.1)) {
         duvidar();
     } else {
         const chute = state.valorAtual ? state.valorAtual + Math.floor(correta * 0.1) : Math.floor(correta * 0.5);
         const lista = Object.values(state.jogadores);
         const index = lista.findIndex(x => x.id === j.id);
-        update(gameRef, {
-            valorAtual: chute,
-            ultimoJogador: j,
-            jogadorDaVez: lista[(index + 1) % lista.length]
-        });
+        update(gameRef, { valorAtual: chute, ultimoJogador: j, jogadorDaVez: lista[(index + 1) % lista.length] });
     }
 }
+
+render();
 </script>
 </body>
 </html>
