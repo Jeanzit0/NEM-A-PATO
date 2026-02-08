@@ -3,99 +3,42 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NEM A PAU - Ultimate Edition</title>
+<title>NEM A PAU - Multiplayer Realtime</title>
 <style>
   body {
-    margin: 0;
-    padding: 0;
-    background: #000;
-    color: #fff;
+    margin: 0; padding: 0; background: #000; color: #fff;
     font-family: 'Courier New', Courier, monospace;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    overflow: hidden;
+    display: flex; justify-content: center; align-items: center;
+    height: 100vh; overflow: hidden;
   }
-
   #players {
-    position: absolute;
-    top: 20px;
-    right: 20px;
-    background: transparent;
-    border: 1px solid #fff;
-    padding: 15px;
-    text-align: right;
-    font-size: 0.9em;
-    min-width: 150px;
-    z-index: 10;
+    position: absolute; top: 20px; right: 20px; border: 1px solid #fff;
+    padding: 15px; text-align: right; font-size: 0.9em; min-width: 150px; z-index: 10;
   }
-
-  #app {
-    width: 100%;
-    display: flex;
-    justify-content: center;
-  }
-
-  .center {
-    text-align: center;
-    max-width: 650px;
-    width: 90%;
-  }
-
+  #app { width: 100%; display: flex; justify-content: center; }
+  .center { text-align: center; max-width: 650px; width: 90%; }
   .logo {
-    font-family: 'Impact', sans-serif;
-    font-size: 4rem;
-    letter-spacing: 5px;
-    border: 4px solid #fff;
-    padding: 10px 20px;
-    display: inline-block;
-    margin-bottom: 30px;
-    text-transform: uppercase;
+    font-family: 'Impact', sans-serif; font-size: 4rem; letter-spacing: 5px;
+    border: 4px solid #fff; padding: 10px 20px; display: inline-block;
+    margin-bottom: 30px; text-transform: uppercase;
   }
-
   input {
-    background: #000;
-    color: #fff;
-    border: 1px solid #fff;
-    padding: 12px;
-    margin: 10px 0;
-    text-align: center;
-    width: 100%;
-    box-sizing: border-box;
-    outline: none;
-    font-size: 1.2rem;
+    background: #000; color: #fff; border: 1px solid #fff;
+    padding: 12px; margin: 10px 0; text-align: center; width: 100%;
+    box-sizing: border-box; outline: none; font-size: 1.2rem;
   }
-
   button {
-    background: #fff;
-    color: #000;
-    border: 1px solid #fff;
-    padding: 12px 25px;
-    margin: 10px 5px;
-    cursor: pointer;
-    font-weight: bold;
-    text-transform: uppercase;
-    width: 100%;
-    font-size: 1rem;
-    transition: 0.2s;
+    background: #fff; color: #000; border: 1px solid #fff;
+    padding: 12px 25px; margin: 10px 5px; cursor: pointer;
+    font-weight: bold; text-transform: uppercase; width: 100%;
+    font-size: 1rem; transition: 0.2s;
   }
-
   button:hover { background: #ccc; }
-
   .pergunta-texto { font-size: 1.4rem; margin: 20px 0; min-height: 80px; }
   .unidade { opacity: 0.6; font-size: 0.8rem; letter-spacing: 2px; }
-  
-  .ganhou { color: #ff4d4d; font-weight: bold; text-transform: uppercase; margin: 5px 0; }
-  .nao-recebeu { color: #2ecc71; font-weight: bold; text-transform: uppercase; margin: 5px 0; }
-
-  .palpite-atual {
-    border-top: 1px solid #333;
-    padding-top: 20px;
-    margin-top: 20px;
-  }
-
-  .stats-info { font-size: 0.7rem; opacity: 0.4; margin-top: 10px; }
+  .ganhou { color: #ff4d4d; font-weight: bold; text-transform: uppercase; }
+  .nao-recebeu { color: #2ecc71; font-weight: bold; text-transform: uppercase; }
+  .palpite-atual { border-top: 1px solid #333; padding-top: 20px; margin-top: 20px; }
 </style>
 </head>
 <body>
@@ -103,289 +46,212 @@
 <div id="players"></div>
 <div id="app"></div>
 
-<script>
-/* ================= BANCO DE DADOS (50 PERGUNTAS) ================= */
-const bancoPerguntasOriginal = [
-  { texto: "Distância média da Terra à Lua", unidade: "km", resposta: 384400 },
-  { texto: "Altura do Monte Everest", unidade: "m", resposta: 8849 },
-  { texto: "Idade estimada da Terra", unidade: "anos", resposta: 4540000000 },
-  { texto: "População estimada do Brasil (Censo 2022)", unidade: "pessoas", resposta: 203062512 },
-  { texto: "Velocidade da luz no vácuo", unidade: "km/s", resposta: 299792 },
-  { texto: "Altura do Burj Khalifa (Prédio mais alto do mundo)", unidade: "m", resposta: 828 },
-  { texto: "Extensão total da Grande Muralha da China", unidade: "km", resposta: 21196 },
-  { texto: "Profundidade máxima da Fossa das Marianas", unidade: "m", resposta: 10935 },
-  { texto: "Comprimento do Rio Nilo", unidade: "km", resposta: 6650 },
-  { texto: "Peso médio de uma Baleia Azul adulta", unidade: "kg", resposta: 140000 },
-  { texto: "Número de ilhas que compõem a Indonésia", unidade: "ilhas", resposta: 17508 },
-  { texto: "Recorde de gols oficiais de Pelé (Santos/Seleção/Cosmos)", unidade: "gols", resposta: 1281 },
-  { texto: "Temperatura no centro do Sol", unidade: "graus celsius", resposta: 15000000 },
-  { texto: "Quantidade de ossos no corpo humano adulto", unidade: "ossos", resposta: 206 },
-  { texto: "Área total da Floresta Amazônica", unidade: "km²", resposta: 5500000 },
-  { texto: "Número de dentes de um tubarão-branco ao longo da vida", unidade: "dentes", resposta: 30000 },
-  { texto: "Duração do voo mais longo de uma galinha", unidade: "segundos", resposta: 13 },
-  { texto: "Recorde mundial de Hot Dogs comidos em 10 minutos", unidade: "unidades", resposta: 76 },
-  { texto: "População da China (aprox.)", unidade: "pessoas", resposta: 1412000000 },
-  { texto: "Velocidade máxima de um Guepardo", unidade: "km/h", resposta: 120 },
-  { texto: "Ano de fundação da cidade de Roma", unidade: "ano (a.C.)", resposta: 753 },
-  { texto: "Pressão no fundo do oceano (Fossa das Marianas)", unidade: "psi", resposta: 15750 },
-  { texto: "Número de episódios de 'Os Simpsons' (até 2023)", unidade: "episódios", resposta: 750 },
-  { texto: "Comprimento de um campo de futebol oficial (máximo)", unidade: "m", resposta: 120 },
-  { texto: "Quantos corações tem um polvo?", unidade: "corações", resposta: 3 },
-  { texto: "Tempo de gestação de um elefante africano", unidade: "dias", resposta: 640 },
-  { texto: "Altura da Estátua da Liberdade (da base à tocha)", unidade: "m", resposta: 93 },
-  { texto: "Recorde de permanência de um ser humano no espaço (Gennady Padalka)", unidade: "dias", resposta: 878 },
-  { texto: "Número de teclas em um piano padrão", unidade: "teclas", resposta: 88 },
-  { texto: "Quantos anos viveu a pessoa mais velha do mundo (Jeanne Calment)?", unidade: "anos", resposta: 122 },
-  { texto: "Número de países no mundo (membros da ONU)", unidade: "países", resposta: 193 },
-  { texto: "Peso da maior pizza já fabricada", unidade: "kg", resposta: 1219 },
-  { texto: "Quantidade de litros de água nas Cataratas do Iguaçu (por segundo)", unidade: "litros", resposta: 1500000 },
-  { texto: "Velocidade de rotação da Terra no Equador", unidade: "km/h", resposta: 1670 },
-  { texto: "Ano em que o homem pisou na Lua pela primeira vez", unidade: "ano", resposta: 1969 },
-  { texto: "Quantos anos durou a Guerra dos Cem Anos?", unidade: "anos", resposta: 116 },
-  { texto: "Número de tentáculos de uma lula gigante", unidade: "tentáculos", resposta: 10 },
-  { texto: "Quantos quilômetros tem a Maratona?", unidade: "km", resposta: 42 },
-  { texto: "Recorde de velocidade de um carro de Fórmula 1", unidade: "km/h", resposta: 372 },
-  { texto: "Quantos elementos existem na Tabela Periódica atual?", unidade: "elementos", resposta: 118 },
-  { texto: "Qual a altura do salto mais alto de um humano (sem ajuda)?", unidade: "cm", resposta: 162 },
-  { texto: "Peso do cérebro humano médio", unidade: "gramas", resposta: 1400 },
-  { texto: "Número de vezes que o coração humano bate por dia (média)", unidade: "batidas", resposta: 100000 },
-  { texto: "Comprimento total do intestino delgado", unidade: "m", resposta: 7 },
-  { texto: "Quantas estrelas existem na bandeira do Brasil?", unidade: "estrelas", resposta: 27 },
-  { texto: "Quantidade de litros de sangue no corpo humano adulto", unidade: "litros", resposta: 5 },
-  { texto: "Qual a temperatura de ebulição da água no topo do Everest?", unidade: "graus celsius", resposta: 71 },
-  { texto: "Distância de Marte em relação ao Sol (média)", unidade: "milhões de km", resposta: 228 },
-  { texto: "Quantas cores tem o arco-íris?", unidade: "cores", resposta: 7 },
-  { texto: "Recorde de maior número de filhos de uma única mulher", unidade: "filhos", resposta: 69 }
-];
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+  import { getDatabase, ref, set, onValue, update, push, onDisconnect } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-/* ================= LÓGICA DO ESTADO ================= */
-let state = {
-  tela: "inicial",
-  jogadores: [],
-  jogadorDaVez: null,
-  pergunta: null,
-  valorAtual: null,
-  ultimoJogador: null,
-  pontosParaPerder: 10,
-  msgFeedbackHtml: "",
-  
-  // Sistema de Fila Anti-Repetição
-  perguntasDisponiveis: [...bancoPerguntasOriginal],
-  rodadaDaFila: 1
-};
+  /* ================= CONFIGURAÇÃO DO FIREBASE ================= */
+  // SUBSTITUA ESTES VALORES PELOS DO SEU PROJETO NO FIREBASE CONSOLE
+  const firebaseConfig = {
+    apiKey: "AIzaSyBLfN4uLs6L1_XnSSdpIbhrPKBSreAtK_8",
+    authDomain: "nemapau-47956.firebaseapp.com",
+    databaseURL: "https://nemapau-47956.firebaseapp.com",
+    projectId: "nemapau-47956",
+    storageBucket: "nemapau-47956.firebasestorage.app",
+    messagingSenderId: "575679805707",
+    appId: "1:575679805707:web:768cf1108ede446f710a0e"
+  };
 
-const dado = n => Math.floor(Math.random() * n) + 1;
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+  const gameRef = ref(db, 'game_state');
+  const playersRef = ref(db, 'players');
 
-function obterPerguntaSemRepetir() {
-  if (state.perguntasDisponiveis.length === 0) {
-    state.perguntasDisponiveis = [...bancoPerguntasOriginal];
-    state.rodadaDaFila++;
-  }
-  const index = Math.floor(Math.random() * state.perguntasDisponiveis.length);
-  const perguntaSorteada = state.perguntasDisponiveis.splice(index, 1)[0];
-  return perguntaSorteada;
-}
+  /* ================= PERGUNTAS ================= */
+  const bancoPerguntasOriginal = [
+    { texto: "Distância média da Terra à Lua", unidade: "km", resposta: 384400 },
+    { texto: "Altura do Monte Everest", unidade: "m", resposta: 8849 },
+    { texto: "Idade estimada da Terra", unidade: "anos", resposta: 4540000000 },
+    { texto: "População estimada do Brasil (Censo 2022)", unidade: "pessoas", resposta: 203062512 },
+    { texto: "Velocidade da luz no vácuo", unidade: "km/s", resposta: 299792 },
+    { texto: "Altura do Burj Khalifa", unidade: "m", resposta: 828 },
+    { texto: "Extensão total da Grande Muralha da China", unidade: "km", resposta: 21196 },
+    { texto: "Recorde mundial de Hot Dogs comidos em 10 minutos", unidade: "unidades", resposta: 76 }
+    // ... adicione as demais perguntas aqui
+  ];
 
-/* ================= RENDERIZAÇÃO ================= */
-function renderPlayers() {
-  const div = document.getElementById("players");
-  if (state.tela === "inicial" || state.jogadores.length === 0) {
-    div.style.display = "none";
-    return;
-  }
-  div.style.display = "block";
-  div.innerHTML = "<strong>PLACAR</strong><br>" + state.jogadores
-    .map(j => `<div>${j.nome}: ${j.pontos}</div>`)
-    .join("");
-}
+  /* ================= ESTADO LOCAL E DO JOGO ================= */
+  let myId = null;
+  let localState = {};
 
-function render() {
-  renderPlayers();
-  const app = document.getElementById("app");
-  app.innerHTML = "";
-  const box = document.createElement("div");
-  box.className = "center";
-  app.appendChild(box);
+  /* ================= RENDERIZAÇÃO ================= */
+  function render() {
+    const playersDiv = document.getElementById("players");
+    const appDiv = document.getElementById("app");
+    appDiv.innerHTML = "";
+    const box = document.createElement("div");
+    box.className = "center";
+    appDiv.appendChild(box);
 
-  if (state.tela === "inicial") {
-    box.innerHTML = `
-      <div class="logo">NEM A PAU</div>
-      <input id="nome" placeholder="SEU NOME">
-      <input id="bots" type="number" min="0" max="9" value="2">
-      <p><small>QUANTIDADE DE BOTS (META: 10 PONTOS)</small></p>
-      <button onclick="entrar()">ENTRAR NO JOGO</button>
-    `;
-  }
-
-  if (state.tela === "espera") {
-    box.innerHTML = `
-      <h2>AGUARDANDO...</h2>
-      ${state.jogadores.map(j=>`<div>- ${j.nome}</div>`).join("")}
-      <button onclick="iniciar()">INICIAR PARTIDA</button>
-    `;
-  }
-
-  if (state.tela === "jogo") {
-    const j = state.jogadorDaVez;
-    box.innerHTML = `
-      <div style="margin-bottom:10px">VEZ DE: <strong>${j.nome.toUpperCase()}</strong></div>
-      <div class="unidade">UNIDADE: ${state.pergunta.unidade}</div>
-      <div class="pergunta-texto">${state.pergunta.texto}</div>
-
-      ${state.valorAtual !== null ? `
-        <div class="palpite-atual">
-          Último palpite: <strong>${state.valorAtual.toLocaleString()}</strong><br>
-          <small>por ${state.ultimoJogador.nome}</small>
-        </div>
-      ` : "<p><small>Você é o primeiro a chutar nesta rodada!</small></p>"}
-
-      <div style="margin-top:30px">
-        ${j.humano ? `
-          <input id="chute" type="number" placeholder="VALOR MAIOR QUE ${state.valorAtual || 0}">
-          <button onclick="chutar()">CHUTAR</button>
-          ${state.valorAtual !== null ? `<button onclick="duvidar()" style="background:transparent; color:#fff; border:1px solid #fff">DUVIDAR!</button>` : ""}
-        ` : `<p>O BOT ESTÁ PENSANDO...</p>`}
-      </div>
-      <div class="stats-info">Perguntas restantes no ciclo: ${state.perguntasDisponiveis.length} | Ciclo: ${state.rodadaDaFila}</div>
-    `;
-    if (!j.humano) setTimeout(jogadaIA, 1500);
-  }
-
-  if (state.tela === "nemapau") {
-    box.innerHTML = `<div class="logo" style="font-size:5rem; border-color: red; color: red;">NEM A PAU!</div>`;
-  }
-
-  if (state.tela === "resultado") {
-    box.innerHTML = `
-      <h3>${state.pergunta.texto}</h3>
-      <p>RESPOSTA CORRETA: <strong>${state.pergunta.resposta.toLocaleString()}</strong> ${state.pergunta.unidade}</p>
-      <p>PALPITE DUVIDADO: <strong>${state.valorAtual.toLocaleString()}</strong></p>
-      <hr style="border:1px solid #333; margin: 20px 0;">
-      <div style="font-size: 1.3rem;">
-        ${state.msgFeedbackHtml}
-      </div>
-    `;
-  }
-
-  if (state.tela === "ranking") {
-    const r = [...state.jogadores].sort((a,b)=> a.pontos - b.pontos);
-    box.innerHTML = `
-      <div class="logo">RANKING</div>
-      <p>FIM DE JOGO!</p>
-      ${r.map((j, i)=>`<div>${i+1}º ${j.nome} — ${j.pontos} pts</div>`).join("")}
-      <br>
-      <button onclick="location.reload()">REINICIAR TUDO</button>
-    `;
-  }
-}
-
-/* ================= AÇÕES ================= */
-function entrar() {
-  const nome = document.getElementById("nome").value || "JOGADOR";
-  const numBots = Number(document.getElementById("bots").value);
-  state.jogadores = [{ nome, pontos: 0, humano: true }];
-  for (let i=1; i<=numBots; i++) state.jogadores.push({ nome:`BOT_${i}`, pontos:0, humano:false });
-  state.tela = "espera";
-  render();
-}
-
-function iniciar() {
-  state.jogadores.sort(() => Math.random() - 0.5);
-  novaRodada();
-}
-
-function novaRodada(quemComeca) {
-  state.jogadorDaVez = quemComeca || state.jogadores[0];
-  state.pergunta = obterPerguntaSemRepetir(); // Lógica anti-repetição
-  state.valorAtual = null;
-  state.ultimoJogador = null;
-  state.tela = "jogo";
-  render();
-}
-
-function chutar() {
-  const input = document.getElementById("chute");
-  const v = Number(input.value);
-  if (state.valorAtual !== null && v <= state.valorAtual) {
-    alert("Você deve chutar um valor MAIOR que o anterior!");
-    return;
-  }
-  if (!v || v <= 0) return;
-  state.valorAtual = v;
-  state.ultimoJogador = state.jogadorDaVez;
-  proximo();
-}
-
-function duvidar() {
-  state.tela = "nemapau";
-  render();
-
-  setTimeout(() => {
-    const correta = state.pergunta.resposta;
-    const jChutou = state.ultimoJogador;
-    const jDuvidou = state.jogadorDaVez;
-
-    if (state.valorAtual > correta) {
-      // Chutou alto demais -> Ponto para o Chutador (Vermelho)
-      jChutou.pontos++;
-      state.msgFeedbackHtml = `
-        <div class="ganhou">${jChutou.nome} ganhou um ponto</div>
-        <div class="nao-recebeu">${jDuvidou.nome} não recebeu pontos</div>
+    if (!localState.tela || localState.tela === "inicial") {
+      playersDiv.style.display = "none";
+      box.innerHTML = `
+        <div class="logo">NEM A PAU</div>
+        <input id="nome" placeholder="SEU NOME">
+        <button id="btnEntrar">ENTRAR NO JOGO MULTIPLAYER</button>
       `;
-    } else {
-      // Chutou valor válido -> Ponto para quem Duvidou (Vermelho)
-      jDuvidou.pontos++;
-      state.msgFeedbackHtml = `
-        <div class="nao-recebeu">${jChutou.nome} não recebeu pontos</div>
-        <div class="ganhou">${jDuvidou.nome} ganhou um ponto</div>
-      `;
+      document.getElementById("btnEntrar")?.addEventListener("click", entrar);
+      return;
     }
 
-    state.tela = "resultado";
-    render();
+    // Render Placar
+    playersDiv.style.display = "block";
+    playersDiv.innerHTML = "<strong>PLACAR</strong><br>" + 
+      Object.values(localState.jogadores || {}).map(j => `<div>${j.nome}: ${j.pontos}</div>`).join("");
+
+    if (localState.tela === "espera") {
+      box.innerHTML = `
+        <h2>SALA DE ESPERA</h2>
+        <p>Jogadores conectados:</p>
+        ${Object.values(localState.jogadores || {}).map(j=>`<div>- ${j.nome}</div>`).join("")}
+        <br>
+        <button id="btnIniciar">INICIAR PARTIDA</button>
+      `;
+      document.getElementById("btnIniciar")?.addEventListener("click", iniciarPartida);
+    }
+
+    if (localState.tela === "jogo") {
+      const jVez = localState.jogadorDaVez;
+      const ehMinhaVez = (jVez && jVez.id === myId);
+
+      box.innerHTML = `
+        <div style="margin-bottom:10px">VEZ DE: <strong>${jVez?.nome.toUpperCase()}</strong></div>
+        <div class="unidade">UNIDADE: ${localState.pergunta.unidade}</div>
+        <div class="pergunta-texto">${localState.pergunta.texto}</div>
+
+        ${localState.valorAtual ? `
+          <div class="palpite-atual">
+            Último palpite: <strong>${localState.valorAtual.toLocaleString()}</strong><br>
+            <small>por ${localState.ultimoJogador?.nome}</small>
+          </div>
+        ` : "<p><small>Primeiro palpite da rodada!</small></p>"}
+
+        <div style="margin-top:30px">
+          ${ehMinhaVez ? `
+            <input id="chute" type="number" placeholder="VALOR MAIOR">
+            <button id="btnChutar">CHUTAR</button>
+            ${localState.valorAtual ? `<button id="btnDuvidar" style="background:transparent; color:#fff;">DUVIDAR!</button>` : ""}
+          ` : `<p>Aguardando jogada de ${jVez?.nome}...</p>`}
+        </div>
+      `;
+      document.getElementById("btnChutar")?.addEventListener("click", chutar);
+      document.getElementById("btnDuvidar")?.addEventListener("click", duvidar);
+    }
+
+    if (localState.tela === "nemapau") {
+      box.innerHTML = `<div class="logo" style="font-size:5rem; border-color: red; color: red;">NEM A PAU!</div>`;
+    }
+
+    if (localState.tela === "resultado") {
+      box.innerHTML = `
+        <h3>${localState.pergunta.texto}</h3>
+        <p>RESPOSTA CORRETA: <strong>${localState.pergunta.resposta.toLocaleString()}</strong></p>
+        <p>PALPITE: <strong>${localState.valorAtual.toLocaleString()}</strong></p>
+        <hr>
+        <div style="font-size: 1.3rem;">${localState.msgFeedbackHtml}</div>
+      `;
+    }
+  }
+
+  /* ================= SINCRONIZAÇÃO FIREBASE ================= */
+  onValue(gameRef, (snapshot) => {
+    const data = snapshot.val();
+    if (data) {
+      localState = data;
+      render();
+    }
+  });
+
+  /* ================= FUNÇÕES DE JOGO ================= */
+  function entrar() {
+    const nome = document.getElementById("nome").value || "Anon";
+    const newPlayerRef = push(playersRef);
+    myId = newPlayerRef.key;
+
+    const playerObj = { id: myId, nome: nome, pontos: 0 };
+    set(newPlayerRef, playerObj);
+    onDisconnect(newPlayerRef).remove();
+
+    onValue(playersRef, (snap) => {
+      const players = snap.val() || {};
+      update(gameRef, { jogadores: players, tela: "espera" });
+    });
+  }
+
+  function iniciarPartida() {
+    const lista = Object.values(localState.jogadores);
+    const p = bancoPerguntasOriginal[Math.floor(Math.random() * bancoPerguntasOriginal.length)];
+    update(gameRef, {
+      tela: "jogo",
+      pergunta: p,
+      jogadorDaVez: lista[0],
+      valorAtual: null,
+      ultimoJogador: null
+    });
+  }
+
+  function chutar() {
+    const v = Number(document.getElementById("chute").value);
+    if (localState.valorAtual && v <= localState.valorAtual) return;
+    
+    const lista = Object.values(localState.jogadores);
+    const indexAtual = lista.findIndex(j => j.id === myId);
+    const proximo = lista[(indexAtual + 1) % lista.length];
+
+    update(gameRef, {
+      valorAtual: v,
+      ultimoJogador: localState.jogadorDaVez,
+      jogadorDaVez: proximo
+    });
+  }
+
+  function duvidar() {
+    update(gameRef, { tela: "nemapau" });
 
     setTimeout(() => {
-      if (state.jogadores.some(j => j.pontos >= state.pontosParaPerder)) {
-        state.tela = "ranking";
+      const correta = localState.pergunta.resposta;
+      const jChutou = localState.ultimoJogador;
+      const jDuvidou = localState.jogadorDaVez;
+      let msg = "";
+
+      if (localState.valorAtual > correta) {
+        jChutou.pontos++;
+        msg = `<div class="ganhou">${jChutou.nome} ganhou um ponto</div><div class="nao-recebeu">${jDuvidou.nome} não recebeu pontos</div>`;
       } else {
-        novaRodada(state.jogadorDaVez);
+        jDuvidou.pontos++;
+        msg = `<div class="nao-recebeu">${jChutou.nome} não recebeu pontos</div><div class="ganhou">${jDuvidou.nome} ganhou um ponto</div>`;
       }
-      render();
-    }, 6000); 
-  }, 2000);
-}
 
-function proximo() {
-  const i = state.jogadores.indexOf(state.jogadorDaVez);
-  state.jogadorDaVez = state.jogadores[(i + 1) % state.jogadores.length];
-  render();
-}
+      update(gameRef, {
+        tela: "resultado",
+        msgFeedbackHtml: msg,
+        [`jogadores/${jChutou.id}/pontos`]: jChutou.pontos,
+        [`jogadores/${jDuvidou.id}/pontos`]: jDuvidou.pontos
+      });
 
-function jogadaIA() {
-  if (state.tela !== "jogo") return;
-  
-  // IA calcula risco baseado no valor real
-  const margem = state.pergunta.resposta * 0.2;
-  const chanceDuvidar = state.valorAtual === null ? 0 : 
-                       (state.valorAtual > state.pergunta.resposta ? 0.6 : 0.1);
-  
-  if (state.valorAtual !== null && Math.random() < chanceDuvidar) {
-    duvidar();
-  } else {
-    let chute;
-    if (state.valorAtual === null) {
-      chute = Math.floor(state.pergunta.resposta * (0.3 + Math.random() * 0.4));
-    } else {
-      // Bot arrisca subir entre 5% a 20% do valor da resposta real
-      chute = state.valorAtual + Math.floor(state.pergunta.resposta * (0.05 + Math.random() * 0.15));
-    }
-    state.valorAtual = chute;
-    state.ultimoJogador = state.jogadorDaVez;
-    proximo();
+      setTimeout(() => {
+        const p = bancoPerguntasOriginal[Math.floor(Math.random() * bancoPerguntasOriginal.length)];
+        update(gameRef, {
+          tela: "jogo",
+          pergunta: p,
+          valorAtual: null,
+          ultimoJogador: null
+        });
+      }, 6000);
+    }, 2000);
   }
-}
 
-render();
+  render();
 </script>
 </body>
 </html>
