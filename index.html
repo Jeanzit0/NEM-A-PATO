@@ -1,45 +1,24 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NEM A PAU - Multiplayer & Bots</title>
-<style>
-  body {
-    margin: 0; padding: 0; background: #000; color: #fff;
-    font-family: 'Courier New', Courier, monospace;
-    display: flex; justify-content: center; align-items: center;
-    height: 100vh; overflow: hidden;
-  }
-  #players {
-    position: absolute; top: 20px; right: 20px; background: transparent;
-    border: 1px solid #fff; padding: 15px; text-align: right;
-    font-size: 0.9em; min-width: 150px; z-index: 10;
-  }
-  #app { width: 100%; display: flex; justify-content: center; }
-  .center { text-align: center; max-width: 600px; width: 90%; }
-  .logo {
-    font-family: 'Impact', sans-serif; font-size: 4rem; letter-spacing: 5px;
-    border: 4px solid #fff; padding: 10px 20px; display: inline-block;
-    margin-bottom: 30px; text-transform: uppercase;
-  }
-  input {
-    background: #000; color: #fff; border: 1px solid #fff;
-    padding: 10px; margin: 10px 0; text-align: center; width: 100%;
-    box-sizing: border-box; outline: none; font-size: 1.2rem;
-  }
-  button {
-    background: #fff; color: #000; border: 1px solid #fff;
-    padding: 12px 25px; margin: 10px 5px; cursor: pointer;
-    font-weight: bold; text-transform: uppercase; width: 100%; font-size: 1rem;
-  }
-  button:hover { background: #000; color: #fff; }
-  .pergunta-texto { font-size: 1.5rem; margin: 20px 0; }
-  .unidade { opacity: 0.7; font-size: 0.8rem; }
-  .ganhou { color: #ff4d4d; font-weight: bold; }
-  .nao-recebeu { color: #2ecc71; font-weight: bold; }
-  .palpite-atual { border-top: 1px solid #333; padding-top: 20px; margin-top: 20px; }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEM A PAU - Multiplayer Edition</title>
+    <style>
+        body { margin: 0; padding: 0; background: #000; color: #fff; font-family: 'Courier New', Courier, monospace; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
+        #players { position: absolute; top: 20px; right: 20px; border: 1px solid #fff; padding: 15px; text-align: right; font-size: 0.9em; min-width: 150px; z-index: 10; display:none; }
+        #app { width: 100%; display: flex; justify-content: center; }
+        .center { text-align: center; max-width: 650px; width: 90%; }
+        .logo { font-family: 'Impact', sans-serif; font-size: 4rem; letter-spacing: 5px; border: 4px solid #fff; padding: 10px 20px; display: inline-block; margin-bottom: 30px; text-transform: uppercase; }
+        input { background: #000; color: #fff; border: 1px solid #fff; padding: 12px; margin: 10px 0; text-align: center; width: 100%; box-sizing: border-box; font-size: 1.2rem; }
+        button { background: #fff; color: #000; border: 1px solid #fff; padding: 12px 25px; margin: 10px 5px; cursor: pointer; font-weight: bold; text-transform: uppercase; width: 100%; font-size: 1rem; }
+        button:hover { background: #ccc; }
+        .pergunta-texto { font-size: 1.4rem; margin: 20px 0; min-height: 80px; }
+        .unidade { opacity: 0.6; font-size: 0.8rem; letter-spacing: 2px; }
+        .ganhou { color: #ff4d4d; font-weight: bold; }
+        .host-tag { color: #f1c40f; font-size: 0.7rem; margin-left: 5px; }
+        .palpite-atual { border-top: 1px solid #333; padding-top: 20px; margin-top: 20px; }
+    </style>
 </head>
 <body>
 
@@ -47,11 +26,11 @@
 <div id="app"></div>
 
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-  import { getDatabase, ref, set, onValue, update, push, onDisconnect } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getDatabase, ref, set, update, onValue, push, onDisconnect, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-  /* ================= CONFIGURAÇÃO DO FIREBASE (MANTIDA) ================= */
-  const firebaseConfig = {
+/* ================= CONFIGURAÇÃO FIREBASE ================= */
+const firebaseConfig = {
     apiKey: "AIzaSyBLfN4uLs6L1_XnSSdpIbhrPKBSreAtK_8",
     authDomain: "nemapau-47956.firebaseapp.com",
     databaseURL: "https://nemapau-47956.firebaseapp.com",
@@ -59,261 +38,208 @@
     storageBucket: "nemapau-47956.firebasestorage.app",
     messagingSenderId: "575679805707",
     appId: "1:575679805707:web:768cf1108ede446f710a0e"
-  };
+};
 
-  const app = initializeApp(firebaseConfig);
-  const db = getDatabase(app);
-  const gameRef = ref(db, 'game_state');
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const gameRef = ref(db, "game_state");
+const playersRef = ref(db, "players");
 
-  /* ================= PERGUNTAS E ESTADO ================= */
-  const perguntas = [
+/* ================= BANCO DE PERGUNTAS ================= */
+const perguntas = [
     { texto: "Distância média da Terra à Lua", unidade: "km", resposta: 384400 },
     { texto: "Altura do Monte Everest", unidade: "m", resposta: 8849 },
-    { texto: "Idade da Terra", unidade: "anos", resposta: 4540000000 },
-    { texto: "População do Brasil", unidade: "pessoas", resposta: 203062512 },
-    { texto: "Velocidade da luz", unidade: "km/s", resposta: 299792 }
-  ];
+    { texto: "Idade estimada da Terra", unidade: "anos", resposta: 4540000000 },
+    { texto: "População estimada do Brasil", unidade: "pessoas", resposta: 203062512 },
+    { texto: "Velocidade da luz no vácuo", unidade: "km/s", resposta: 299792 },
+    { texto: "Altura do Burj Khalifa", unidade: "m", resposta: 828 },
+    { texto: "Extensão da Muralha da China", unidade: "km", resposta: 21196 },
+    { texto: "Quantos corações tem um polvo?", unidade: "corações", resposta: 3 },
+    { texto: "Ano em que o homem pisou na Lua", unidade: "ano", resposta: 1969 }
+];
 
-  let myId = null;
-  let state = {
-    tela: "inicial",
-    jogadores: [],
-    jogadorDaVez: null,
-    pergunta: null,
-    valorAtual: null,
-    ultimoJogador: null,
-    pontosParaPerder: 10,
-    msgFeedbackHtml: ""
-  };
+/* ================= ESTADO LOCAL E SINCRONIZAÇÃO ================= */
+let state = { tela: "inicial" };
+let myId = null;
 
-  const dado = n => Math.floor(Math.random() * n) + 1;
-
-  /* ================= SINCRONIZAÇÃO ================= */
-  onValue(gameRef, (snapshot) => {
-    const data = snapshot.val();
-    if (data) {
-      state = data;
-      render();
+onValue(gameRef, (snapshot) => {
+    if (snapshot.exists()) {
+        state = snapshot.val();
+        render();
     }
-  });
+});
 
-  /* ================= RENDERIZAÇÃO (INTERFACE ORIGINAL) ================= */
-  function renderPlayers() {
-    const div = document.getElementById("players");
-    if (state.tela === "inicial" || !state.jogadores || state.jogadores.length === 0) {
-      div.style.display = "none";
-      return;
-    }
-    div.style.display = "block";
-    div.innerHTML = "<strong>PLACAR</strong><br>" + state.jogadores
-      .map(j => `<div>${j.nome}: ${j.pontos}</div>`)
-      .join("");
-  }
-
-  window.render = function() {
-    renderPlayers();
+/* ================= FUNÇÕES DE RENDERIZAÇÃO ================= */
+function render() {
     const appDiv = document.getElementById("app");
+    const playersDiv = document.getElementById("players");
     appDiv.innerHTML = "";
     const box = document.createElement("div");
     box.className = "center";
     appDiv.appendChild(box);
 
+    // Render Placar
+    if (state.jogadores && state.tela !== "inicial") {
+        playersDiv.style.display = "block";
+        playersDiv.innerHTML = "<strong>PLACAR</strong><br>" + Object.values(state.jogadores)
+            .map(j => `<div>${j.nome}${state.host === j.id ? '<span class="host-tag">[HOST]</span>' : ''}: ${j.pontos}</div>`).join("");
+    } else { playersDiv.style.display = "none"; }
+
+    // Telas
     if (state.tela === "inicial") {
-      box.innerHTML = `
-        <div class="logo">NEM A PAU</div>
-        <input id="nome" placeholder="SEU NOME">
-        <input id="bots" type="number" min="0" max="9" value="2">
-        <p><small>QUANTIDADE DE BOTS</small></p>
-        <button onclick="entrar()">ENTRAR</button>
-      `;
+        box.innerHTML = `
+            <div class="logo">NEM A PAU</div>
+            <input id="nome" placeholder="SEU NOME">
+            <input id="bots" type="number" min="0" max="5" value="0">
+            <p><small>QUANTIDADE DE BOTS</small></p>
+            <button id="btnEntrar">ENTRAR NO JOGO</button>
+        `;
+        document.getElementById("btnEntrar").onclick = entrar;
     }
 
     if (state.tela === "espera") {
-      box.innerHTML = `
-        <h2>PRONTO?</h2>
-        ${state.jogadores.map(j=>`<div>- ${j.nome}</div>`).join("")}
-        <button onclick="iniciar()">INICIAR</button>
-      `;
+        box.innerHTML = `
+            <h2>SALA DE ESPERA</h2>
+            <p>Jogadores na sala:</p>
+            ${Object.values(state.jogadores).map(j => `<div>- ${j.nome}</div>`).join("")}
+            ${state.host === myId ? '<button id="btnIniciar">INICIAR PARTIDA</button>' : '<p>Aguardando Host...</p>'}
+        `;
+        document.getElementById("btnIniciar")?.addEventListener("click", iniciarPartida);
     }
 
     if (state.tela === "jogo") {
-      const j = state.jogadorDaVez;
-      const ehMinhaVez = (j.id === myId);
-
-      box.innerHTML = `
-        <div>VEZ DE: <strong>${j.nome.toUpperCase()}</strong></div>
-        <div class="unidade">${state.pergunta.unidade}</div>
-        <div class="pergunta-texto">${state.pergunta.texto}</div>
-
-        ${state.valorAtual !== null ? `
-          <div class="palpite-atual">
-            Último palpite: <strong>${state.valorAtual.toLocaleString()}</strong><br>
-            <small>por ${state.ultimoJogador.nome}</small>
-          </div>
-        ` : ""}
-
-        <div style="margin-top:30px">
-          ${ehMinhaVez ? `
-            <input id="chute" type="number" placeholder="DIGITE UM VALOR MAIOR">
-            <button onclick="chutar()">CHUTAR</button>
-            ${state.valorAtual !== null ? `<button onclick="duvidar()" style="background:transparent; color:#fff; border:1px solid #fff">DUVIDAR!</button>` : ""}
-          ` : `<p>${j.humano ? 'Aguardando jogador...' : 'O BOT está pensando...'}</p>`}
-        </div>
-      `;
-      
-      // Se for a vez de um BOT, apenas o "host" (primeiro jogador) executa a lógica da IA
-      if (!j.humano && state.jogadores[0].id === myId) {
-          setTimeout(jogadaIA, 2000);
-      }
+        const jVez = state.jogadorDaVez;
+        box.innerHTML = `
+            <div>VEZ DE: <strong>${jVez.nome.toUpperCase()}</strong></div>
+            <div class="unidade">${state.pergunta.unidade}</div>
+            <div class="pergunta-texto">${state.pergunta.texto}</div>
+            ${state.valorAtual ? `<div class="palpite-atual">Último palpite: <strong>${state.valorAtual.toLocaleString()}</strong><br><small>por ${state.ultimoJogador.nome}</small></div>` : "<p>Primeiro chute!</p>"}
+            <div style="margin-top:30px">
+                ${jVez.id === myId ? `
+                    <input id="chute" type="number" placeholder="VALOR MAIOR">
+                    <button id="btnChutar">CHUTAR</button>
+                    ${state.valorAtual ? '<button id="btnDuvidar" style="background:red; color:white">NEM A PAU!</button>' : ''}
+                ` : `<p>AGUARDANDO JOGADA...</p>`}
+            </div>
+        `;
+        document.getElementById("btnChutar")?.addEventListener("click", chutar);
+        document.getElementById("btnDuvidar")?.addEventListener("click", duvidar);
+        
+        if (!jVez.humano && state.host === myId) setTimeout(jogadaIA, 2000);
     }
 
     if (state.tela === "nemapau") {
-      box.innerHTML = `<div class="logo" style="font-size:5rem; color:red; border-color:red;">NEM A PAU!</div>`;
+        box.innerHTML = `<div class="logo" style="border-color:red; color:red;">NEM A PAU!</div>`;
     }
 
     if (state.tela === "resultado") {
-      box.innerHTML = `
-        <h3>${state.pergunta.texto}</h3>
-        <p>RESPOSTA REAL: ${state.pergunta.resposta.toLocaleString()}</p>
-        <p>ÚLTIMO PALPITE: ${state.valorAtual.toLocaleString()}</p>
-        <hr style="border:1px solid #333">
-        <div style="font-size: 1.2rem; line-height: 1.8;">
-          ${state.msgFeedbackHtml}
-        </div>
-      `;
+        box.innerHTML = `
+            <h3>RESPOSTA: ${state.pergunta.resposta.toLocaleString()}</h3>
+            <p>PALPITE: ${state.valorAtual.toLocaleString()}</p>
+            <hr>
+            <div class="ganhou">${state.msgFeedbackHtml}</div>
+        `;
     }
+}
 
-    if (state.tela === "ranking") {
-      const r = [...state.jogadores].sort((a,b)=> a.pontos - b.pontos);
-      box.innerHTML = `
-        <div class="logo">RANKING</div>
-        ${r.map((j, i)=>`<div>${i+1}º ${j.nome} — ${j.pontos} pts</div>`).join("")}
-        <br>
-        <button onclick="location.reload()">REINICIAR</button>
-      `;
-    }
-  }
-
-  /* ================= AÇÕES COM FIREBASE ================= */
-  window.entrar = function() {
-    const nomeInput = document.getElementById("nome").value || "VOCÊ";
-    const numBots = Number(document.getElementById("bots").value);
+/* ================= LÓGICA DO JOGO ================= */
+async function entrar() {
+    const nome = document.getElementById("nome").value || "Jogador";
+    const numBots = parseInt(document.getElementById("bots").value) || 0;
     
-    myId = Math.random().toString(36).substring(7); // Gera um ID temporário
+    const pRef = push(playersRef);
+    myId = pRef.key;
+
+    // Remove jogador se desconectar
+    onDisconnect(pRef).remove();
+
+    const novoJogador = { id: myId, nome: nome, pontos: 0, humano: true };
+    await set(pRef, novoJogador);
+
+    const snap = await get(playersRef);
+    const jogadoresAtuais = snap.val() || {};
+    const ids = Object.keys(jogadoresAtuais);
     
-    let novosJogadores = [{ id: myId, nome: nomeInput, pontos: 0, humano: true }];
-    for (let i=1; i<=numBots; i++) {
-      novosJogadores.push({ id: "bot_"+i, nome: `BOT_${i}`, pontos: 0, humano: false });
-    }
-    
-    update(gameRef, {
-      jogadores: novosJogadores,
-      tela: "espera"
-    });
-  }
-
-  window.iniciar = function() {
-    let list = [...state.jogadores];
-    list.sort(() => Math.random() - 0.5);
-    
-    update(gameRef, {
-      jogadores: list,
-      pergunta: perguntas[Math.floor(Math.random()*perguntas.length)],
-      jogadorDaVez: list[0],
-      valorAtual: null,
-      ultimoJogador: null,
-      tela: "jogo"
-    });
-  }
-
-  window.chutar = function() {
-    const v = Number(document.getElementById("chute").value);
-    if (state.valorAtual !== null && v <= state.valorAtual) return;
-    if (!v || v <= 0) return;
-
-    const i = state.jogadores.findIndex(j => j.id === state.jogadorDaVez.id);
-    const proximo = state.jogadores[(i + 1) % state.jogadores.length];
-
-    update(gameRef, {
-      valorAtual: v,
-      ultimoJogador: state.jogadorDaVez,
-      jogadorDaVez: proximo
-    });
-  }
-
-  window.duvidar = function() {
-    update(gameRef, { tela: "nemapau" });
-
-    setTimeout(() => {
-      const correta = state.pergunta.resposta;
-      const jChutou = {...state.ultimoJogador};
-      const jDuvidou = {...state.jogadorDaVez};
-      let html = "";
-
-      if (state.valorAtual > correta) {
-        jChutou.pontos++;
-        html = `<div class="ganhou">${jChutou.nome} ganhou um ponto</div><div class="nao-recebeu">${jDuvidou.nome} não recebeu pontos</div>`;
-      } else {
-        jDuvidou.pontos++;
-        html = `<div class="nao-recebeu">${jChutou.nome} não recebeu pontos</div><div class="ganhou">${jDuvidou.nome} ganhou um ponto</div>`;
-      }
-
-      // Atualiza pontos na lista principal
-      const novosJogadores = state.jogadores.map(j => {
-          if(j.id === jChutou.id) return {...j, pontos: jChutou.pontos};
-          if(j.id === jDuvidou.id) return {...j, pontos: jDuvidou.pontos};
-          return j;
-      });
-
-      update(gameRef, {
-        jogadores: novosJogadores,
-        tela: "resultado",
-        msgFeedbackHtml: html
-      });
-
-      setTimeout(() => {
-        if (novosJogadores.some(j => j.pontos >= state.pontosParaPerder)) {
-          update(gameRef, { tela: "ranking" });
-        } else {
-          update(gameRef, {
-            pergunta: perguntas[Math.floor(Math.random()*perguntas.length)],
-            valorAtual: null,
-            ultimoJogador: null,
-            tela: "jogo"
-          });
+    if (ids[0] === myId) { // Eu sou o Host
+        for(let i=1; i<=numBots; i++) {
+            const botId = `BOT_${i}`;
+            jogadoresAtuais[botId] = { id: botId, nome: botId, pontos: 0, humano: false };
         }
-      }, 6000);
-    }, 2000);
-  }
-
-  function jogadaIA() {
-    if (state.tela !== "jogo") return;
-    const margemErro = state.pergunta.resposta * 0.3;
-    const chanceDuvidar = state.valorAtual === null ? 0 : 
-                         (state.valorAtual > state.pergunta.resposta + margemErro ? 0.7 : 0.2);
-    
-    if (state.valorAtual !== null && Math.random() < chanceDuvidar) {
-      window.duvidar();
-    } else {
-      let chute;
-      if (state.valorAtual === null) {
-        chute = Math.floor(state.pergunta.resposta * (Math.random() * 0.6));
-      } else {
-        chute = state.valorAtual + dado(Math.floor(state.pergunta.resposta * 0.15));
-      }
-      
-      const i = state.jogadores.findIndex(j => j.id === state.jogadorDaVez.id);
-      const proximo = state.jogadores[(i + 1) % state.jogadores.length];
-
-      update(gameRef, {
-        valorAtual: chute,
-        ultimoJogador: state.jogadorDaVez,
-        jogadorDaVez: proximo
-      });
+        update(gameRef, { tela: "espera", jogadores: jogadoresAtuais, host: myId });
     }
-  }
+}
 
-  render();
+function iniciarPartida() {
+    const lista = Object.values(state.jogadores);
+    update(gameRef, {
+        tela: "jogo",
+        pergunta: perguntas[Math.floor(Math.random() * perguntas.length)],
+        jogadorDaVez: lista[0],
+        valorAtual: null,
+        ultimoJogador: null
+    });
+}
+
+function chutar() {
+    const v = Number(document.getElementById("chute").value);
+    if (state.valorAtual && v <= state.valorAtual) return alert("Chute um valor maior!");
+    
+    const lista = Object.values(state.jogadores);
+    const index = lista.findIndex(j => j.id === myId);
+    const prox = lista[(index + 1) % lista.length];
+
+    update(gameRef, {
+        valorAtual: v,
+        ultimoJogador: state.jogadores[myId],
+        jogadorDaVez: prox
+    });
+}
+
+function duvidar() {
+    update(gameRef, { tela: "nemapau" });
+    setTimeout(() => {
+        const correta = state.pergunta.resposta;
+        const jChutou = state.ultimoJogador;
+        const jDuvidou = state.jogadorDaVez;
+        let msg = "";
+
+        if (state.valorAtual > correta) {
+            state.jogadores[jChutou.id].pontos++;
+            msg = `${jChutou.nome} mentiu e ganhou 1 ponto!`;
+        } else {
+            state.jogadores[jDuvidou.id].pontos++;
+            msg = `${jChutou.nome} falou a verdade! Ponto para ${jDuvidou.nome}.`;
+        }
+
+        update(gameRef, {
+            tela: "resultado",
+            msgFeedbackHtml: msg,
+            jogadores: state.jogadores
+        });
+
+        setTimeout(iniciarPartida, 5000);
+    }, 2000);
+}
+
+function jogadaIA() {
+    if (state.tela !== "jogo") return;
+    const j = state.jogadorDaVez;
+    const correta = state.pergunta.resposta;
+    
+    const risco = state.valorAtual > correta ? 0.7 : 0.15;
+    if (state.valorAtual && Math.random() < risco) {
+        duvidar();
+    } else {
+        const chute = state.valorAtual ? state.valorAtual + Math.floor(correta * 0.1) : Math.floor(correta * 0.5);
+        const lista = Object.values(state.jogadores);
+        const index = lista.findIndex(x => x.id === j.id);
+        update(gameRef, {
+            valorAtual: chute,
+            ultimoJogador: j,
+            jogadorDaVez: lista[(index + 1) % lista.length]
+        });
+    }
+}
 </script>
 </body>
 </html>
