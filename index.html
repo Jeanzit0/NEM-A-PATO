@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NEM A PAU - Ultimate Online</title>
+<script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+
+<style>
+  body { margin: 0; padding: 0; background: #000; color: #fff; font-family: 'Courier New', monospace; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
+  #players { position: absolute; top: 20px; right: 20px; border: 1px solid #fff; padding: 15px; text-align: right; font-size: 0.9em; min-width: 150px; z-index: 10; background: rgba(0,0,0,0.8); }
+  #chat-container { position: absolute; bottom: 20px; left: 20px; width: 320px; height: 300px; border: 1px solid #fff; background: rgba(0,0,0,0.9); display: none; flex-direction: column; z-index: 100; }
+  #chat-messages { flex-grow: 1; overflow-y: auto; padding: 10px; font-size: 0.85rem; text-align: left; }
+  #chat-input { background: #111; border: none; border-top: 1px solid #fff; color: #fff; padding: 12px; width: 100%; box-sizing: border-box; outline: none; }
+  #app { width: 100%; display: flex; justify-content: center; }
+  .center { text-align: center; max-width: 650px; width: 90%; }
+  .logo { font-family: 'Impact', sans-serif; font-size: 3.5rem; letter-spacing: 5px; border: 4px solid #fff; padding: 10px 20px; display: inline-block; margin-bottom: 25px; }
+  input { background: #000; color: #fff; border: 1px solid #fff; padding: 12px; margin: 10px 0; width: 100%; box-sizing: border-box; text-align: center; font-size: 1.2rem; }
+  button { background: #fff; color: #000; border: 1px solid #fff; padding: 12px; cursor: pointer; font-weight: bold; text-transform: uppercase; width: 100%; transition: 0.2s; }
+  button:hover { background: #ccc; }
+  .pergunta-texto { font-size: 1.8rem; font-weight: bold; margin-bottom: 5px; }
+  .unidade-texto { font-size: 1.1rem; color: #aaa; margin-bottom: 20px; text-transform: uppercase; }
+  
+  /* Modal de Troca de Nome */
+  #overlay-nome { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 1000; display: none; justify-content: center; align-items: center; }
+</style>
+</head>
+<body>
+
+<div id="overlay-nome">
+  <div class="center" style="border: 2px solid #fff; padding: 30px; background: #000;">
+    <h3>NOME JÁ EM USO NESSA SALA</h3>
+    <p>Escolha um nome diferente para entrar:</p>
+    <input id="novoNomeInp" placeholder="Novo Nome">
+    <button onclick="trocarNomeEEntrar()">ALTERAR NOME</button>
+    <button onclick="voltarEspera()" style="background:none; color: #fff; margin-top: 10px;">CANCELAR</button>
+  </div>
+</div>
+
+<div id="players"></div>
+<div id="app"></div>
+
+<div id="chat-container">
+  <div style="padding: 5px; background: #222; font-size: 0.7rem; text-align: center; border-bottom: 1px solid #444;">DIGITE /join NOME_DA_SALA</div>
+  <div id="chat-messages"></div>
+  <input type="text" id="chat-input" placeholder="Mensagem ou comando..." onkeydown="if(event.key==='Enter') tratarChat()">
+</div>
+
+<script>
+/* ================= CONFIGURAÇÃO FIREBASE ================= */
+const firebaseConfig = {
+    apiKey: "AIzaSyBLfN4uLs6L1_XnSSdpIbhrPKBSreAtK_8",
+    authDomain: "nemapau-47956.firebaseapp.com",
+    databaseURL: "https://nemapau-47956-default-rtdb.firebaseio.com/",
+    projectId: "nemapau-47956",
+    storageBucket: "nemapau-47956.firebasestorage.app",
+    messagingSenderId: "575679805707",
+    appId: "1:575679805707:web:768cf1108ede446f710a0e"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+const bancoPerguntasOriginal = [
+  { texto: "Qual a distância média da Terra à Lua?", unidade: "Quilômetros (km)", resposta: 384400 },
+  { texto: "Qual o tamanho do Everest?", unidade: "Metros (m)", resposta: 8849 },
+  { texto: "Qual a população do Brasil?", unidade: "Pessoas", resposta: 203062512 },
+  { texto: "Qual a velocidade da luz no vácuo?", unidade: "km/s", resposta: 299792 },
+  { texto: "Quantos ossos tem um humano adulto?", unidade: "Ossos", resposta: 206 }
+];
+
+let state = {
+  tela: "inicial",
+  jogadores: [],
+  meuNome: "",
+  souHost: false,
+  salaId: null,
+  jogadorDaVez: null,
+  pergunta: null,
+  valorAtual: null,
+  ultimoJogador: null
+};
+
+/* ================= LÓGICA DE SALAS E NOMES ================= */
+
+function tratarChat() {
+  const input = document.getElementById("chat-input");
+  const msg = input.value.trim();
+  if (!msg) return;
+
+  if (msg.startsWith("/")) {
+    const partes = msg.split(" ");
+    const cmd = partes[0].toLowerCase();
+
+    if (cmd === "/join") {
+      const novaSala = partes[1];
+      if (!novaSala) return alert("Uso: /join nome_da_sala");
+      conectarASala(novaSala);
+    } else {
+      const senha = prompt("Senha Admin:");
+      if (senha === "jean24gs") executarComandoAdmin(msg);
+      else alert("Senha incorreta!");
+    }
+  } else {
+    enviarMensagemChat(msg);
+  }
+  input.value = "";
+}
+
+function conectarASala(id) {
+  const salaRef = db.ref(`salas/${id.toLowerCase()}/estado`);
+  
+  salaRef.once('value', (snap) => {
+    const data = snap.val();
+    // Verifica se o nome já existe na sala
+    if (data && data.jogadores && data.jogadores.some(j => j.nome.toLowerCase() === state.meuNome.toLowerCase())) {
+      document.getElementById("overlay-nome").style.display = "flex";
+      state.salaAlvo = id.toLowerCase(); // Guarda para tentar novamente após trocar nome
+      return;
+    }
+    realizarConexao(id);
+  });
+}
+
+function realizarConexao(id) {
+  if (state.salaId) {
+    db.ref(`salas/${state.salaId}/estado`).off();
+    db.ref(`salas/${state.salaId}/chat`).off();
+  }
+
+  state.salaId = id.toLowerCase();
+  const estadoRef = db.ref(`salas/${state.salaId}/estado`);
+
+  estadoRef.on('value', (snap) => {
+    const onlineState = snap.val();
+    if (onlineState) {
+      state.tela = onlineState.tela;
+      state.jogadores = onlineState.jogadores || [];
+      state.jogadorDaVez = onlineState.jogadorDaVez;
+      state.pergunta = onlineState.pergunta;
+      state.valorAtual = onlineState.valorAtual;
+      state.ultimoJogador = onlineState.ultimoJogador;
+      state.souHost = (state.jogadores.length > 0 && state.jogadores[0].nome === state.meuNome);
+      render();
+    }
+  });
+
+  db.ref(`salas/${state.salaId}/chat`).on('child_added', (snap) => {
+    const m = snap.val();
+    exibirNoChat(m.autor, m.texto);
+  });
+
+  estadoRef.once('value', (snap) => {
+    let currentData = snap.val() || { tela: "espera", jogadores: [] };
+    if (!currentData.jogadores.find(j => j.nome === state.meuNome)) {
+      currentData.jogadores.push({ nome: state.meuNome, pontos: 0 });
+      estadoRef.set(currentData);
+    }
+  });
+
+  document.getElementById("overlay-nome").style.display = "none";
+  exibirNoChat("SISTEMA", `Conectado à sala: ${state.salaId}`);
+}
+
+function trocarNomeEEntrar() {
+  const novo = document.getElementById("novoNomeInp").value.trim();
+  if (!novo) return;
+  state.meuNome = novo;
+  realizarConexao(state.salaAlvo);
+}
+
+function voltarEspera() {
+  document.getElementById("overlay-nome").style.display = "none";
+  state.tela = "escolha-sala";
+  render();
+}
+
+/* ================= COMANDOS ADMIN ================= */
+
+function executarComandoAdmin(msg) {
+  const cmd = msg.split(" ")[0].toLowerCase();
+  
+  if (cmd === "/limparcache") {
+    // Apaga o nó 'salas' inteiro do Firebase
+    db.ref('salas').remove()
+      .then(() => alert("Banco de dados resetado com sucesso!"))
+      .catch(e => alert("Erro ao resetar: " + e.message));
+  }
+  
+  if (cmd === "/endgame") salvarEstadoGlobal({ tela: "ranking" });
+  
+  if (cmd === "/takehost") {
+    const index = state.jogadores.findIndex(j => j.nome === state.meuNome);
+    if (index !== -1) {
+      const me = state.jogadores.splice(index, 1)[0];
+      state.jogadores.unshift(me);
+      salvarEstadoGlobal({ jogadores: state.jogadores });
+    }
+  }
+}
+
+/* ================= RENDERIZAÇÃO ================= */
+
+function render() {
+  const app = document.getElementById("app");
+  const playersDiv = document.getElementById("players");
+  const chatCont = document.getElementById("chat-container");
+  
+  app.innerHTML = "";
+  const box = document.createElement("div");
+  box.className = "center";
+  app.appendChild(box);
+
+  if (state.tela === "inicial") {
+    playersDiv.style.display = "none";
+    chatCont.style.display = "none";
+    box.innerHTML = `<div class="logo">NEM A PAU</div><input id="nInp" placeholder="SEU NOME"><button onclick="registrar()">ENTRAR</button>`;
+    return;
+  }
+
+  if (state.tela === "escolha-sala") {
+    chatCont.style.display = "flex";
+    box.innerHTML = `<h2>SALA DE ESPERA</h2>
+                     <p style="font-size: 1.2rem; color: #00ff00; margin: 30px 0;">Digite <strong>/join (nome_da_sala)</strong> para entrar em um jogo</p>
+                     <p><small>O chat está no canto inferior esquerdo.</small></p>`;
+    return;
+  }
+
+  playersDiv.style.display = "block";
+  chatCont.style.display = "flex";
+  playersDiv.innerHTML = `<strong>SALA: ${state.salaId.toUpperCase()}</strong><br><hr>` + 
+    state.jogadores.map(j => `<div>${j.nome}: ${j.pontos}</div>`).join("");
+
+  if (state.tela === "espera") {
+    box.innerHTML = `<h2>SALA: ${state.salaId.toUpperCase()}</h2>` + 
+      state.jogadores.map(j => `<div>• ${j.nome}</div>`).join("") +
+      (state.souHost ? `<button onclick="iniciarJogo()" style="margin-top:20px">INICIAR JOGO</button>` : `<p><small>Aguardando o Host iniciar...</small></p>`);
+  }
+
+  if (state.tela === "jogo") {
+    const jVez = state.jogadorDaVez;
+    box.innerHTML = `
+      <div style="margin-bottom:30px; color:#aaa;">VEZ DE: <strong style="color:#fff;">${jVez.nome.toUpperCase()}</strong></div>
+      <div class="pergunta-texto">${state.pergunta.texto}</div>
+      <div class="unidade-texto">UM: ${state.pergunta.unidade}</div>
+      
+      ${state.valorAtual ? `<p>Palpite atual: <strong style="font-size:1.5rem;">${state.valorAtual}</strong></p>` : "<p style='color:#00ff00'>Início da rodada!</p>"}
+      
+      <div style="margin-top:20px">
+        ${jVez.nome === state.meuNome ? `
+          <input id="chInp" type="number" placeholder="Maior que ${state.valorAtual || 0}">
+          <button onclick="enviarPalpite()">CHUTAR</button>
+          ${state.valorAtual ? `<button onclick="duvidar()" style="background:none; color:red; border-color:red; margin-top:10px;">NEM A PAU!</button>` : ""}
+        ` : `<p>Aguardando ${jVez.nome} jogar...</p>`}
+      </div>`;
+  }
+
+  if (state.tela === "ranking") {
+    const r = [...state.jogadores].sort((a,b)=> a.pontos - b.pontos);
+    box.innerHTML = `<h2>RANKING FINAL</h2>` + r.map((j,i)=>`<div>${i+1}º ${j.nome}: ${j.pontos}</div>`).join("") +
+      `<button onclick="location.reload()" style="margin-top:20px">SAIR DO JOGO</button>`;
+  }
+}
+
+/* ================= AÇÕES DO JOGO ================= */
+
+function registrar() {
+  const n = document.getElementById("nInp").value.trim();
+  if (!n) return;
+  state.meuNome = n;
+  state.tela = "escolha-sala";
+  render();
+}
+
+function iniciarJogo() {
+  const perguntaSorteada = bancoPerguntasOriginal[Math.floor(Math.random() * bancoPerguntasOriginal.length)];
+  salvarEstadoGlobal({
+    tela: "jogo",
+    pergunta: perguntaSorteada,
+    jogadorDaVez: state.jogadores[0],
+    valorAtual: null,
+    ultimoJogador: null
+  });
+}
+
+function enviarPalpite() {
+  const v = Number(document.getElementById("chInp").value);
+  if (state.valorAtual && v <= state.valorAtual) return alert("O valor deve ser MAIOR que o anterior!");
+  
+  const idx = state.jogadores.findIndex(j => j.nome === state.jogadorDaVez.nome);
+  const proximo = state.jogadores[(idx + 1) % state.jogadores.length];
+  
+  salvarEstadoGlobal({
+    valorAtual: v,
+    ultimoJogador: state.jogadorDaVez,
+    jogadorDaVez: proximo
+  });
+}
+
+function duvidar() {
+  const correta = state.pergunta.resposta;
+  let novosJogadores = [...state.jogadores];
+  
+  if (state.valorAtual > correta) {
+    const jIdx = novosJogadores.findIndex(j => j.nome === state.ultimoJogador.nome);
+    novosJogadores[jIdx].pontos++;
+    alert(`MENTIRA! A resposta era ${correta}. ${state.ultimoJogador.nome} ganha 1 ponto.`);
+  } else {
+    const dIdx = novosJogadores.findIndex(j => j.nome === state.meuNome);
+    novosJogadores[dIdx].pontos++;
+    alert(`VERDADE! A resposta era ${correta}. Você errou e ganha 1 ponto.`);
+  }
+
+  const novaPergunta = bancoPerguntasOriginal[Math.floor(Math.random() * bancoPerguntasOriginal.length)];
+  salvarEstadoGlobal({
+    jogadores: novosJogadores,
+    valorAtual: null,
+    pergunta: novaPergunta,
+    jogadorDaVez: state.jogadorDaVez
+  });
+}
+
+function enviarMensagemChat(texto) {
+  if (!state.salaId) return;
+  db.ref(`salas/${state.salaId}/chat`).push({
+    autor: `<strong>${state.meuNome}</strong>`,
+    texto: texto
+  });
+}
+
+function exibirNoChat(autor, texto) {
+  const box = document.getElementById("chat-messages");
+  if(!box) return;
+  box.innerHTML += `<div>${autor}: ${texto}</div>`;
+  box.scrollTop = box.scrollHeight;
+}
+
+function salvarEstadoGlobal(novoEstado) {
+  if (state.salaId) {
+    db.ref(`salas/${state.salaId}/estado`).update(novoEstado);
+  }
+}
+
+render();
+</script>
+</body>
+</html>
