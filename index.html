@@ -4,11 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NEM A PAU - Ultimate Online</title>
+<link rel="icon" type="image/png" href="icone.png">
 <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
 
 <style>
-  body { margin: 0; padding: 0; background: #000; color: #fff; font-family: 'Courier New', monospace; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
+  body { margin: 0; padding: 0; background-image: url("NEMAPATO.png"); background-size: cover; background-position: center; background-repeat: no-repeat; background-attachment: fixed;  color: #fff;  font-family: 'Courier New', monospace; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
   #players { position: absolute; top: 20px; right: 20px; border: 1px solid #fff; padding: 15px; text-align: right; font-size: 0.9em; min-width: 150px; z-index: 10; background: rgba(0,0,0,0.8); }
   #chat-container { position: absolute; bottom: 20px; left: 20px; width: 320px; height: 300px; border: 1px solid #fff; background: rgba(0,0,0,0.9); display: none; flex-direction: column; z-index: 100; }
   #chat-messages { flex-grow: 1; overflow-y: auto; padding: 10px; font-size: 0.85rem; text-align: left; }
@@ -48,6 +49,24 @@
 </div>
 
 <script>
+/* ================= MÚSICA ================= */
+document.addEventListener("click", function iniciarMusica() {
+  const musica = document.getElementById("bg-music");
+  musica.volume = 0.5;
+  musica.play();
+  document.removeEventListener("click", iniciarMusica);
+});
+
+function toggleMusic() {
+  const musica = document.getElementById("bg-music");
+  if (musica.paused) {
+    musica.volume = 0.5;
+    musica.play();
+  } else {
+    musica.pause();
+  }
+}
+
 /* ================= CONFIGURAÇÃO FIREBASE ================= */
 const firebaseConfig = {
     apiKey: "AIzaSyBLfN4uLs6L1_XnSSdpIbhrPKBSreAtK_8",
@@ -241,7 +260,7 @@ function render() {
   if (state.tela === "jogo") {
     const jVez = state.jogadorDaVez;
     box.innerHTML = `
-      <div style="margin-bottom:30px; color:#aaa;">VEZ DE: <strong style="color:#fff;">${jVez.nome.toUpperCase()}</strong></div>
+      <div style="margin-bottom:30px; color:#00ff00;">VEZ DE: <strong style="color:#fff;">${jVez.nome.toUpperCase()}</strong></div>
       <div class="pergunta-texto">${state.pergunta.texto}</div>
       <div class="unidade-texto">UM: ${state.pergunta.unidade}</div>
       
@@ -298,17 +317,23 @@ function enviarPalpite() {
   });
 }
 
-function duvidar() {
+async function duvidar() {
+  tocarSom("som-duvida", 0.6);
+  await delay(1000);
+
   const correta = state.pergunta.resposta;
   let novosJogadores = [...state.jogadores];
   
   if (state.valorAtual > correta) {
     const jIdx = novosJogadores.findIndex(j => j.nome === state.ultimoJogador.nome);
     novosJogadores[jIdx].pontos++;
+    tocarSom("som-ponto", 0.6);
     alert(`MENTIRA! A resposta era ${correta}. ${state.ultimoJogador.nome} ganha 1 ponto.`);
   } else {
     const dIdx = novosJogadores.findIndex(j => j.nome === state.meuNome);
     novosJogadores[dIdx].pontos++;
+
+    tocarSom("som-erro", 0.6);
     alert(`VERDADE! A resposta era ${correta}. Você errou e ganha 1 ponto.`);
   }
 
@@ -342,7 +367,44 @@ function salvarEstadoGlobal(novoEstado) {
   }
 }
 
+function tocarSom(id, volume = 0.5) {
+  const som = document.getElementById(id);
+  if (!som) return;
+  som.volume = volume;
+  som.currentTime = 0; // Reinicia se já estiver tocando
+  som.play();
+}
+
 render();
+
+document.addEventListener("click", function(e) {
+  if (e.target.tagName === "BUTTON") {
+    tocarSom("som-clique", 0.3);
+  }
+});
+
+function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 </script>
+
+<!-- EFEITOS SONOROS -->
+<audio id="som-clique" src="sons/clique/old-western-pistol-shot-sound-effect/old-western-pistol-shot-sound-effect.mp3"></audio>
+<audio id="som-duvida" src="sons/duvida/what-did-you-say-sound-effect.mp3"></audio>
+<audio id="som-ponto" src="sons/ponto/epic-musical-finale-sound-effect.mp3"></audio>
+<audio id="som-erro" src="sons/erro.mp3"></audio>
+
+<audio id="bg-music" loop>
+  <source src="sons/gentle-emotional-piano-music/gentle-emotional-piano-music.mp3" type="audio/mpeg">
+</audio>
+
+<button id="music-btn" onclick="toggleMusic()" 
+  style="position: fixed; bottom: 20px; right: 20px; width: 100px; z-index: 200;">
+  🎵 MÚSICA
+</button>
+
+
+
 </body>
 </html>
