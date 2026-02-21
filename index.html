@@ -385,7 +385,21 @@ function render() {
 
   playersDiv.style.display = "block";
   chatCont.style.display = "flex";
-  playersDiv.innerHTML = `<strong>SALA: ${state.salaId.toUpperCase()}</strong><br><hr>` + 
+  playersDiv.innerHTML = `
+    <strong>SALA: ${state.salaId.toUpperCase()}</strong>
+    <br><hr>
+  ` + 
+  state.jogadores.map(j => `
+    <div style="display:flex; align-items:center; gap:8px;">
+      ${j.avatar ? `<img src="${j.avatar}" style="width:30px; height:30px; border-radius:50%; object-fit:cover;">` : ""}
+      <span>${j.nome}: ${j.pontos}</span>
+    </div>
+  `).join("") + `
+    <hr style="margin:10px 0;">
+    <button onclick="sairDaSala()" style="background:#800; color:#fff; border-color:#800;">
+      SAIR DA PARTIDA
+    </button>
+  `; 
     state.jogadores.map(j => `
       <div style="display:flex; align-items:center; gap:8px;">
         ${j.avatar ? `<img src="${j.avatar}" style="width:30px; height:30px; border-radius:50%; object-fit:cover;">` : ""}
@@ -630,6 +644,78 @@ function limparCanvas() {
 
 function fecharDesenho() { 
   document.getElementById("modal-desenho").style.display = "none"; 
+}
+
+function sairDaSala() {
+  if (!state.salaId) return;
+
+  const estadoRef = db.ref(`salas/${state.salaId}/estado`);
+
+  estadoRef.once('value', (snap) => {
+    const data = snap.val();
+    if (!data || !data.jogadores) return;
+
+    let jogadores = [...data.jogadores];
+    const indexSaindo = jogadores.findIndex(j => j.nome === state.meuNome);
+
+    if (indexSaindo === -1) return;
+
+    const jogadorSaindo = jogadores[indexSaindo];
+    jogadores.splice(indexSaindo, 1);
+
+    // 🔥 Se não sobrou ninguém → apaga sala
+    if (jogadores.length === 0) {
+      db.ref(`salas/${state.salaId}`).remove();
+      limparLocal();
+      return;
+    }
+
+    let novoEstado = { jogadores };
+
+    // 🔥 Se só sobrou 1 jogador → volta para espera
+    if (jogadores.length === 1) {
+      novoEstado.tela = "espera";
+      novoEstado.valorAtual = null;
+      novoEstado.ultimoJogador = null;
+      novoEstado.jogadorDaVez = jogadores[0];
+    }
+
+    // 🔥 Se estava no jogo
+    if (data.tela === "jogo") {
+
+      // 👉 Se quem saiu era o jogador da vez
+      if (data.jogadorDaVez?.nome === jogadorSaindo.nome) {
+        const proxIndex = indexSaindo % jogadores.length;
+        novoEstado.jogadorDaVez = jogadores[proxIndex];
+      }
+
+      // 👉 Se quem saiu era o último que deu palpite
+      if (data.ultimoJogador?.nome === jogadorSaindo.nome) {
+        novoEstado.ultimoJogador = null;
+        novoEstado.valorAtual = null;
+      }
+    }
+
+    estadoRef.update(novoEstado);
+
+    limparLocal();
+  });
+}
+
+function limparLocal() {
+  if (!state.salaId) return;
+
+  db.ref(`salas/${state.salaId}/estado`).off();
+  db.ref(`salas/${state.salaId}/chat`).off();
+
+  state.salaId = null;
+  state.jogadores = [];
+  state.tela = "inicial";
+  state.jogadorDaVez = null;
+  state.ultimoJogador = null;
+  state.valorAtual = null;
+
+  render();
 }
 
 </script>
