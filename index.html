@@ -25,6 +25,13 @@
   
   /* Modal de Troca de Nome */
   #overlay-nome { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 1000; display: none; justify-content: center; align-items: center; }
+  
+  #cor-pincel {
+  width: 40px;
+  height: 40px;
+  border: none;
+  cursor: pointer;
+}
 </style>
 </head>
 <body>
@@ -188,7 +195,8 @@ let state = {
   jogadorDaVez: null,
   pergunta: null,
   valorAtual: null,
-  ultimoJogador: null
+  ultimoJogador: null,
+  meuAvatar: null
 };
 
 /* ================= LÓGICA DE SALAS E NOMES ================= */
@@ -250,7 +258,11 @@ function realizarConexao(id) {
       state.pergunta = onlineState.pergunta;
       state.valorAtual = onlineState.valorAtual;
       state.ultimoJogador = onlineState.ultimoJogador;
-      state.souHost = (state.jogadores.length > 0 && state.jogadores[0].nome === state.meuNome);
+      state.souHost = (
+        state.jogadores.length > 0 &&
+        state.jogadores[0].nome === state.meuNome
+      );
+
       render();
     }
   });
@@ -262,8 +274,14 @@ function realizarConexao(id) {
 
   estadoRef.once('value', (snap) => {
     let currentData = snap.val() || { tela: "espera", jogadores: [] };
+
     if (!currentData.jogadores.find(j => j.nome === state.meuNome)) {
-      currentData.jogadores.push({ nome: state.meuNome, pontos: 0 });
+      currentData.jogadores.push({
+        nome: state.meuNome,
+        pontos: 0,
+        avatar: state.meuAvatar || null
+      });
+
       estadoRef.set(currentData);
     }
   });
@@ -324,7 +342,36 @@ function render() {
   if (state.tela === "inicial") {
     playersDiv.style.display = "none";
     chatCont.style.display = "none";
-    box.innerHTML = `<div class="logo">NEM A PAU</div><input id="nInp" placeholder="SEU NOME"><button onclick="registrar()">ENTRAR</button>`;
+    box.innerHTML = `<div class="logo">NEM A PATO</div><input id="nInp" placeholder="SEU NOME">
+
+    <div style="margin-top:15px;">
+      <label style="display:block; margin-bottom:8px;">SEU AVATAR</label>
+
+      <div style="display:flex; gap:10px; align-items:center; justify-content:center;">
+        
+        <label style="
+          background:#fff;
+          color:#000;
+          padding:10px 14px;
+          font-weight:bold;
+          text-transform:uppercase;
+          cursor:pointer;
+          border:1px solid #fff;
+          min-width:140px;
+          text-align:center;
+        ">
+          UPLOAD
+          <input type="file" id="avatar-upload" accept="image/*" style="display:none;" onchange="uploadAvatar(event)">
+        </label>
+
+        <button onclick="abrirDesenho()" style="min-width:140px;">
+          DESENHAR
+        </button>
+
+      </div>
+    </div>
+    <br>
+    <button onclick="registrar()">ENTRAR</button>`;
     return;
   }
 
@@ -339,7 +386,12 @@ function render() {
   playersDiv.style.display = "block";
   chatCont.style.display = "flex";
   playersDiv.innerHTML = `<strong>SALA: ${state.salaId.toUpperCase()}</strong><br><hr>` + 
-    state.jogadores.map(j => `<div>${j.nome}: ${j.pontos}</div>`).join("");
+    state.jogadores.map(j => `
+      <div style="display:flex; align-items:center; gap:8px;">
+        ${j.avatar ? `<img src="${j.avatar}" style="width:30px; height:30px; border-radius:50%; object-fit:cover;">` : ""}
+        <span>${j.nome}: ${j.pontos}</span>
+      </div>
+    `).join("");
 
   if (state.tela === "espera") {
     box.innerHTML = `<h2>SALA: ${state.salaId.toUpperCase()}</h2>` + 
@@ -377,7 +429,14 @@ function render() {
 function registrar() {
   const n = document.getElementById("nInp").value.trim();
   if (!n) return;
+
   state.meuNome = n;
+  state.tela = "escolha-sala";
+  render();
+}
+
+function finalizarRegistro(nome) {
+  state.meuNome = nome;
   state.tela = "escolha-sala";
   render();
 }
@@ -477,6 +536,102 @@ function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+function uploadAvatar(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+
+  reader.onload = function(e) {
+    state.meuAvatar = e.target.result;
+  };
+
+  reader.readAsDataURL(file);
+}
+
+//DESENHO DE AVATAR
+
+let desenhando = false;
+let canvas = null;
+let ctx = null;
+
+function abrirDesenho() {
+  const modal = document.getElementById("modal-desenho");
+  modal.style.display = "flex";
+
+  canvas = document.getElementById("canvas-avatar");
+  ctx = canvas.getContext("2d");
+
+  ativarEventosCanvas();
+}
+
+function ativarEventosCanvas() {
+  canvas.onmousedown = (e) => {
+    desenhando = true;
+
+    const rect = canvas.getBoundingClientRect();
+    ctx.beginPath();
+    ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+  };
+
+  canvas.onmouseup = () => desenhando = false;
+  canvas.onmouseleave = () => desenhando = false;
+
+  canvas.onmousemove = (e) => {
+    if (!desenhando) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    const cor = document.getElementById("cor-pincel").value;
+
+    ctx.lineWidth = 4;
+    ctx.lineCap = "round";
+    ctx.strokeStyle = cor;
+
+    ctx.lineTo(x, y);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+  };
+
+}
+
+function salvarDesenho() {
+  // Criar um canvas temporário
+  const canvasTemp = document.createElement("canvas");
+  canvasTemp.width = canvas.width;
+  canvasTemp.height = canvas.height;
+
+  const ctxTemp = canvasTemp.getContext("2d");
+
+  // Fundo branco
+  ctxTemp.fillStyle = "#ffffff";
+  ctxTemp.fillRect(0, 0, canvasTemp.width, canvasTemp.height);
+
+  // Desenho por cima
+  ctxTemp.drawImage(canvas, 0, 0);
+
+  ctxTemp.beginPath();
+  ctxTemp.arc(150, 150, 150, 0, Math.PI * 2);
+  ctxTemp.clip();
+
+  // Salva como imagem com fundo branco
+  avatarTemp = canvasTemp.toDataURL("image/png");
+  state.meuAvatar = avatarTemp;
+
+  fecharDesenho();
+}
+
+function limparCanvas() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+}
+
+function fecharDesenho() { 
+  document.getElementById("modal-desenho").style.display = "none"; 
+}
+
 </script>
 
 <!-- EFEITOS SONOROS -->
@@ -494,7 +649,31 @@ function delay(ms) {
   🎵 MÚSICA
 </button>
 
+<div id="modal-desenho" style="
+  display:none;
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.8);
+  justify-content:center;
+  align-items:center;
+  flex-direction:column;
+  gap:10px;
+">
 
+  <div style="display:flex; gap:10px; align-items:center;">
+    <label style="font-weight:bold;">COR:</label>
+    <input type="color" id="cor-pincel" value="#000000">
+  </div>
+
+  <canvas id="canvas-avatar" width="300" height="300"
+    style="background:white; border-radius:10px;"></canvas>
+
+  <div style="display:flex; gap:10px;">
+    <button onclick="salvarDesenho()">SALVAR</button>
+    <button onclick="limparCanvas()">LIMPAR</button>
+    <button onclick="fecharDesenho()">FECHAR</button>
+  </div>
+</div>
 
 </body>
 
