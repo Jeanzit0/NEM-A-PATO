@@ -365,38 +365,11 @@ function render() {
       </div>`;
   }
 
-if (state.tela === "revelacao") {
-    const info = state.dadosRevelacao;
-    box.parentElement.style.backgroundColor = "#2eaf5d"; // Muda o fundo do app para verde
-    
-    box.innerHTML = `
-        <div class="tela-revelacao">
-            <div class="card-pergunta">
-                <p>${info.pergunta}</p>
-                <p style="color: yellow; font-size: 1.2rem;">${info.unidade}</p>
-                <h1 style="font-size: 4rem; margin: 10px 0;">${info.respostaCorreta}</h1>
-            </div>
-
-            <div class="status-rodada">
-                <p>${info.quemNaoMarcou} <span class="nao-marcou">NÃO MARCOU</span> PONTOS NESTA RODADA</p>
-                <p>${info.quemMarcou} <span class="ganhou">MARCOU</span> PONTOS NESTA RODADA</p>
-            </div>
-            
-            <p style="margin-top: 20px; font-size: 0.8rem; opacity: 0.7;">Retornando em instantes...</p>
-        </div>
-    `;
-    return;
-} else {
-    box.parentElement.style.backgroundColor = ""; // Reseta o fundo nas outras telas
-}
-
-if (state.tela === "ranking") {
-    // Ranking em ordem CRESCENTE (quem tem menos pontos está em 1º)
-    const r = [...state.jogadores].sort((a, b) => a.pontos - b.pontos);
-    box.innerHTML = `<h2>🏆 RANKING FINAL 🏆</h2>` + 
-        r.map((j, i) => `<div style="font-size:1.5rem; margin:10px;">${i + 1}º ${j.nome}: ${j.pontos} pts</div>`).join("") +
-        `<button onclick="location.reload()" style="margin-top:20px">NOVO JOGO</button>`;
-}
+  if (state.tela === "ranking") {
+    const r = [...state.jogadores].sort((a,b)=> a.pontos - b.pontos);
+    box.innerHTML = `<h2>RANKING FINAL</h2>` + r.map((j,i)=>`<div>${i+1}º ${j.nome}: ${j.pontos}</div>`).join("") +
+      `<button onclick="location.reload()" style="margin-top:20px">SAIR DO JOGO</button>`;
+  }
 }
 
 /* ================= AÇÕES DO JOGO ================= */
@@ -435,63 +408,25 @@ function enviarPalpite() {
 }
 
 async function duvidar() {
-    tocarSom("som-duvida", 0.6);
-    await delay(1000);
+  tocarSom("som-duvida", 0.6);
+  await delay(1000);
 
-    const correta = state.pergunta.resposta;
-    let novosJogadores = [...state.jogadores];
-    let quemMarcou = "";
-    let quemNaoMarcou = "";
+  const correta = state.pergunta.resposta;
+  let novosJogadores = [...state.jogadores];
+  
+  if (state.valorAtual > correta) {
+    const jIdx = novosJogadores.findIndex(j => j.nome === state.ultimoJogador.nome);
+    novosJogadores[jIdx].pontos++;
+    tocarSom("som-ponto", 0.6);
+    alert(`MENTIRA! A resposta era ${correta}. ${state.ultimoJogador.nome} ganha 1 ponto.`);
+  } else {
+    const dIdx = novosJogadores.findIndex(j => j.nome === state.meuNome);
+    novosJogadores[dIdx].pontos++;
 
-    // Lógica de quem recebe o ponto (o castigo)
-    if (state.valorAtual > correta) {
-        // MENTIRA: Quem chutou (ultimoJogador) ganha ponto
-        const jIdx = novosJogadores.findIndex(j => j.nome === state.ultimoJogador.nome);
-        novosJogadores[jIdx].pontos++;
-        quemMarcou = state.ultimoJogador.nome;
-        quemNaoMarcou = state.meuNome;
-        tocarSom("som-ponto", 0.6);
-    } else {
-        // VERDADE: Quem duvidou (meuNome) ganha ponto
-        const dIdx = novosJogadores.findIndex(j => j.nome === state.meuNome);
-        novosJogadores[dIdx].pontos++;
-        quemMarcou = state.meuNome;
-        quemNaoMarcou = state.ultimoJogador.nome;
-        tocarSom("som-erro", 0.6);
-    }
+    tocarSom("som-erro", 0.6);
+    alert(`VERDADE! A resposta era ${correta}. Você errou e ganha 1 ponto.`);
+  }
 
-    // Verifica se alguém chegou a 10 pontos
-    const alguemPerdeu = novosJogadores.some(j => j.pontos >= 10);
-
-    // Salva o estado para mostrar a tela de revelação para todos
-    salvarEstadoGlobal({
-        jogadores: novosJogadores,
-        tela: "revelacao",
-        dadosRevelacao: {
-            pergunta: state.pergunta.texto,
-            unidade: state.pergunta.unidade,
-            respostaCorreta: correta,
-            palpiteErrado: state.valorAtual,
-            quemMarcou: quemMarcou,
-            quemNaoMarcou: quemNaoMarcou
-        }
-    });
-
-    // Se o jogo não acabou, volta para o jogo após 10 segundos
-    setTimeout(() => {
-        if (alguemPerdeu) {
-            salvarEstadoGlobal({ tela: "ranking" });
-        } else {
-            const novaPergunta = bancoPerguntasOriginal[Math.floor(Math.random() * bancoPerguntasOriginal.length)];
-            salvarEstadoGlobal({
-                tela: "jogo",
-                valorAtual: null,
-                pergunta: novaPergunta,
-                jogadorDaVez: state.jogadorDaVez // Mantém a vez ou rotaciona se preferir
-            });
-        }
-    }, 10000);
-}
   const novaPergunta = bancoPerguntasOriginal[Math.floor(Math.random() * bancoPerguntasOriginal.length)];
   salvarEstadoGlobal({
     jogadores: novosJogadores,
@@ -564,4 +499,3 @@ function delay(ms) {
 </body>
 
 </html>
-
