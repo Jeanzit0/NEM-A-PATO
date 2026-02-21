@@ -82,11 +82,93 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
 const bancoPerguntasOriginal = [
-  { texto: "Qual a distância média da Terra à Lua?", unidade: "Quilômetros (km)", resposta: 384400 },
-  { texto: "Qual o tamanho do Everest?", unidade: "Metros (m)", resposta: 8849 },
-  { texto: "Qual a população do Brasil?", unidade: "Pessoas", resposta: 203062512 },
-  { texto: "Qual a velocidade da luz no vácuo?", unidade: "km/s", resposta: 299792 },
-  { texto: "Quantos ossos tem um humano adulto?", unidade: "Ossos", resposta: 206 }
+  { texto: "Qual a altura do homem mais alto do mundo?", unidade: "Metros (m)", resposta: 2.74 },
+  { texto: "Qual a altura do homem mais alto na atualidade?", unidade: "Metros (m)", resposta: 2.51 },
+  { texto: "Qual a altura da mulher mais alta do mundo?", unidade: "Metros (m)", resposta: 2.48 },
+  { texto: "Qual a altura da mulher mais alta na atualidade?", unidade: "Metros (m)", resposta: 2.34 },
+  { texto: "Qual a altura do homem mais baixo do mundo?", unidade: "Centímetros (cm)", resposta: 54.6 },
+  { texto: "Qual a altura da mulher mais baixa do mundo?", unidade: "Centímetros (cm)", resposta: 58 },
+  { texto: "Qual a altura dos gêmeos idênticos mais baixos do mundo?", unidade: "Centímetros (cm)", resposta: 86 },
+  { texto: "Qual o peso do homem mais pesado do mundo?", unidade: "Quilogramas (kg)", resposta: 635 },
+  { texto: "Qual o peso da mulher mais pesada do mundo?", unidade: "Quilogramas (kg)", resposta: 545 },
+  { texto: "Qual o comprimento do maior cabelo do mundo?", unidade: "Centímetros (cm)", resposta: 562.7 },
+  { texto: "Qual o comprimento da maior língua do mundo?", unidade: "Centímetros (cm)", resposta: 10 },
+  { texto: "Qual a menor cintura já registrada?", unidade: "Centímetros (cm)", resposta: 38 },
+  { texto: "Qual o maior número de dedos em uma pessoa?", unidade: "Quantidade (unidades)", resposta: 34 },
+  { texto: "Qual o comprimento da maior unha do mundo?", unidade: "Metros (m)", resposta: 7.51 },
+  { texto: "Qual o comprimento do maior pelo de orelha já medido?", unidade: "Centímetros (cm)", resposta: 13.2 },
+  { texto: "Qual o comprimento do maior nariz medido em uma pessoa?", unidade: "Centímetros (cm)", resposta: 8.8 },
+  { texto: "Qual o comprimento da maior boca já registrada?", unidade: "Centímetros (cm)", resposta: 17 },
+  { texto: "Qual a altura da maior barba no mundo na atualidade?", unidade: "Metros (m)", resposta: 2.36 },
+  { texto: "Qual a circunferência dos maiores peitos naturais já medidos?", unidade: "Centímetros (cm)", resposta: 177.8 },
+  { texto: "Qual o maior peso ao nascer já registrado de um bebê?", unidade: "Quilogramas (kg)", resposta: 7.04 },
+  { texto: "Qual o maior número de filhos de um casal na história?", unidade: "Quantidade (unidades)", resposta: 69 },
+  { texto: "Qual o maior número de filhos que um homem já teve?", unidade: "Quantidade (unidades)", resposta: 888 },
+  { texto: "Qual o maior número de filhos que uma mulher já teve?", unidade: "Quantidade (unidades)", resposta: 69 },
+  { texto: "Qual a idade da mulher mais velha a ter um filho com registro?", unidade: "Anos (anos)", resposta: 66 },
+  { texto: "Qual a área do maior parque temático do mundo?", unidade: "Metros quadrados (m²)", resposta: 121729441 },
+  { texto: "Qual a maior queda vertical em uma montanha-russa do mundo?", unidade: "Metros (m)", resposta: 127.4 },
+  { texto: "Qual o comprimento da montanha-russa mais longa do mundo?", unidade: "Metros (m)", resposta: 1273.1 },
+  { texto: "Qual a velocidade da montanha-russa mais rápida do mundo?", unidade: "Quilômetros por hora (km/h)", resposta: 107 },
+  { texto: "Qual a altura do maior toboágua do mundo?", unidade: "Metros (m)", resposta: 49.9 },
+  { texto: "Quantos animais abriga o maior zoológico do mundo?", unidade: "Quantidade (animais)", resposta: 12600 },
+  { texto: "Qual a capacidade de público do maior teatro do mundo?", unidade: "Quantidade (pessoas)", resposta: 10000 },
+  { texto: "Qual a área do maior teatro do mundo em termos de espaço?", unidade: "Metros quadrados (m²)", resposta: 100000 },
+  { texto: "Qual a altura da maior estátua do mundo?", unidade: "Metros (m)", resposta: 182 },
+  { texto: "Qual a altura da maior escultura do mundo?", unidade: "Metros (m)", resposta: 55 },
+  { texto: "Qual o volume da maior pirâmide do mundo?", unidade: "Metros cúbicos (m³)", resposta: 4450000 },
+  { texto: "Qual a altura da pirâmide mais alta do mundo?", unidade: "Metros (m)", resposta: 137.16 },
+  { texto: "Qual a área do maior parque urbano do mundo?", unidade: "Metros quadrados (m²)", resposta: 1200000 },
+  { texto: "Qual o comprimento da subida mais íngreme do mundo?", unidade: "Metros (m)", resposta: 350 },
+  { texto: "Qual o comprimento da maior rua do mundo?", unidade: "Quilômetros (km)", resposta: 61.6 },
+  { texto: "Qual o comprimento da menor rua do mundo?", unidade: "Metros (m)", resposta: 2.06 },
+  { texto: "Qual a profundidade do Poço Superprofundo de Kola?", unidade: "Metros (m)", resposta: 12262 },
+  { texto: "Qual a altura do edifício mais alto do mundo?", unidade: "Metros (m)", resposta: 818 },
+  { texto: "Qual a altura da torre mais alta do mundo?", unidade: "Metros (m)", resposta: 634 },
+  { texto: "Quantos quartos tem o maior hotel do mundo?", unidade: "Quantidade (quartos)", resposta: 6276 },
+  { texto: "Qual a área do maior palácio do mundo?", unidade: "Metros quadrados (m²)", resposta: 350000 },
+  { texto: "Qual a capacidade do maior estádio coberto do mundo?", unidade: "Quantidade (pessoas)", resposta: 90000 },
+  { texto: "Qual o comprimento da maior piscina do mundo?", unidade: "Metros (m)", resposta: 1013 },
+  { texto: "Qual a área da maior piscina coberta do mundo?", unidade: "Metros quadrados (m²)", resposta: 20000 },
+  { texto: "Qual a profundidade da piscina mais funda do mundo?", unidade: "Metros (m)", resposta: 33 },
+  { texto: "Quantas lojas tem o maior shopping do mundo?", unidade: "Quantidade (lojas)", resposta: 2350 },
+  { texto: "Qual a área do maior shopping do mundo?", unidade: "Metros quadrados (m²)", resposta: 350000 },
+  { texto: "Qual o peso do objeto construído pelo homem mais pesado do mundo?", unidade: "Toneladas (t)", resposta: 656000 },
+  { texto: "Qual a potência instalada da maior hidrelétrica do mundo?", unidade: "Megawatts (MW)", resposta: 22500 },
+  { texto: "Qual o comprimento do maior túnel ferroviário do mundo?", unidade: "Quilômetros (km)", resposta: 57 },
+  { texto: "Qual a área do computador mais rápido do mundo (medida usada)?", unidade: "Metros quadrados (m²)", resposta: 372000 },
+  { texto: "Qual a frequência recorde de overclock já registrada?", unidade: "Megahertz (MHz)", resposta: 8461.51 },
+  { texto: "Quantos assinantes tinha o maior provedor de internet do mundo?", unidade: "Milhões de assinantes", resposta: 45 },
+  { texto: "Qual a velocidade recorde de conexão à internet transmitida para cinemas em Gb/s?", unidade: "Gigabits por segundo (Gb/s)", resposta: 10 },
+  { texto: "Qual o peso do celular mais leve do mundo?", unidade: "Gramas (g)", resposta: 40 },
+  { texto: "Qual a velocidade máxima alcançada por um robô com pernas?", unidade: "Quilômetros por hora (km/h)", resposta: 28.97 },
+  { texto: "Qual o recorde mundial de campo magnético gerado não-destrutivamente?", unidade: "Teslas (T)", resposta: 100.75 },
+  { texto: "Qual a distância do recorde de teletransporte de fótons?", unidade: "Quilômetros (km)", resposta: 97 },
+  { texto: "Qual o valor arrecadado pelo produto de entretenimento mais vendido em um dia?", unidade: "Dólares (US$)", resposta: 1000000000 },
+  { texto: "Qual o orçamento do filme mais barato já distribuído?", unidade: "Dólares (US$)", resposta: 7000 },
+  { texto: "Qual o orçamento do filme mais caro já produzido por Hollywood?", unidade: "Dólares (US$)", resposta: 356000000 },
+  { texto: "Qual a duração do filme mais longo já produzido (em minutos)?", unidade: "Minutos (min)", resposta: 5220 },
+  { texto: "Qual a duração do filme mais longo produzido por Hollywood (em minutos)?", unidade: "Minutos (min)", resposta: 243 },
+  { texto: "Qual a duração do vídeo mais longo no YouTube (em horas)?", unidade: "Horas (h)", resposta: 571 },
+  { texto: "Qual o maior número de indicações ao Oscar já recebidas por uma pessoa?", unidade: "Quantidade (indicações)", resposta: 59 },
+  { texto: "Quantos Oscars uma pessoa mais ganhou na história?", unidade: "Quantidade (estatuetas)", resposta: 26 },
+  { texto: "Qual o maior número de indicações ao Oscar por um ator/atriz?", unidade: "Quantidade (indicações)", resposta: 17 },
+  { texto: "Qual o maior número de Oscars ganhos por um ator/atriz?", unidade: "Quantidade (estatuetas)", resposta: 4 },
+  { texto: "Qual a idade do ator/atriz mais velho a ganhar um Oscar?", unidade: "Anos (anos)", resposta: 82 },
+  { texto: "Qual a idade do actor/atriz mais jovem a ganhar um Oscar?", unidade: "Anos (anos)", resposta: 10 },
+  { texto: "Qual o maior público registrado em um evento de games?", unidade: "Quantidade (pessoas)", resposta: 869543 },
+  { texto: "Quantas unidades vendeu Call of Duty: Modern Warfare 3 no primeiro dia?", unidade: "Milhões de unidades", resposta: 6.5 },
+  { texto: "Quantas cópias vendeu o jogo mais vendido da história?", unidade: "Milhões de cópias", resposta: 495 },
+  { texto: "Qual a maior coleção de consoles ainda em funcionamento?", unidade: "Quantidade (itens)", resposta: 483 },
+  { texto: "Qual a maior pontuação feminina no Guitar Hero III?", unidade: "Quantidade (pontos)", resposta: 789349 },
+  { texto: "Qual o maior número de pontuações perfeitas em Wii Sports Bowling?", unidade: "Quantidade (vezes)", resposta: 2850 },
+  { texto: "Quantas cópias a Bíblia vendeu (estimativa mínima)?", unidade: "Bilhões de cópias", resposta: 4 },
+  { texto: "Em quantas línguas a Bíblia foi traduzida?", unidade: "Quantidade (línguas)", resposta: 2400 },
+  { texto: "Qual o peso do livro mais pesado do mundo?", unidade: "Quilogramas (kg)", resposta: 6200 },
+  { texto: "Qual o maior público do carnaval de Salvador por ano?", unidade: "Milhões de pessoas", resposta: 2 },
+  { texto: "Qual o público do Galo da Madrugada em festa de rua?", unidade: "Milhões de pessoas", resposta: 1.7 },
+  { texto: "Qual o maior público anual do Coachella Valley Music and Arts Festival?", unidade: "Pessoas por ano", resposta: 225000 },
+  { texto: "Qual o público do maior festival geek do mundo (South by Southwest)?", unidade: "Pessoas por ano", resposta: 50000 }
 ];
 
 let state = {
@@ -200,7 +282,7 @@ function voltarEspera() {
 function executarComandoAdmin(msg) {
   const cmd = msg.split(" ")[0].toLowerCase();
   
-  if (cmd === "/limparcache") {
+  if (cmd === "/clear") {
     // Apaga o nó 'salas' inteiro do Firebase
     db.ref('salas').remove()
       .then(() => alert("Banco de dados resetado com sucesso!"))
@@ -407,4 +489,5 @@ function delay(ms) {
 
 
 </body>
+
 </html>
