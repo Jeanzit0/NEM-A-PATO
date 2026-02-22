@@ -421,12 +421,6 @@ function render() {
       SAIR DA PARTIDA
     </button>
   `; 
-    state.jogadores.map(j => `
-      <div style="display:flex; align-items:center; gap:8px;">
-        ${j.avatar ? `<img src="${j.avatar}" style="width:30px; height:30px; border-radius:50%; object-fit:cover;">` : ""}
-        <span>${j.nome}: ${j.pontos}</span>
-      </div>
-    `).join("");
 
   if (state.tela === "espera") {
     box.innerHTML = `<h2>SALA: ${state.salaId.toUpperCase()}</h2>` + 
